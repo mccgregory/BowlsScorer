@@ -8,10 +8,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -167,7 +171,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     val mContext = LocalContext.current     // For Toast
     val view = LocalView.current            // For CLICK sound
     var showExitDialog by remember { mutableStateOf(false) }
-    var showDeadEndDialog by remember { mutableStateOf(false) } // For dead end confirmation
+    var showDeadEndDialog by remember { mutableStateOf(false) }
+    var showHistoryDialog by remember { mutableStateOf(false) }
+    var editingEnd by remember { mutableStateOf<Triple<Int, Int, Int>?>(null) } // Track the end being edited
     val coroutineScope = rememberCoroutineScope()
 
     var myScore by rememberSaveable { mutableStateOf(0) }
@@ -181,7 +187,25 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var bowls by rememberSaveable { mutableStateOf(0) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
 
-    // Choose Game
+    // Store history of ends: list of (end number, Up score, Down score)
+    val endHistory = rememberSaveable(
+        saver = Saver(
+            save = { history ->
+                history.map { triple -> listOf(triple.first, triple.second, triple.third) }
+            },
+            restore = { saved ->
+                val list = mutableListOf<Triple<Int, Int, Int>>()
+                saved.forEach { innerList ->
+                    list.add(Triple(innerList[0], innerList[1], innerList[2]))
+                }
+                list.toMutableStateList() // Convert to SnapshotStateList
+            }
+        )
+    ) {
+        mutableStateListOf<Triple<Int, Int, Int>>()
+    }
+
+    // Set max points per end based on game type
     if (gameSingles) { maxClick = 2 + 1 } // Max per end is 2
     else { maxClick = 4 + 1 }             // Max per end is 4
 
@@ -192,7 +216,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         }
     }
 
-    // Reset function for new game
+    // Reset game state for a new game
     fun resetGame() {
         myScore = 0
         theirScore = 0
@@ -203,10 +227,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         themClick = false
         bowls = 0
         gameOver = false
+        endHistory.clear() // Clear history on new game
     }
 
-    // Function to handle dead end confirmation
+    // Handle dead end logic after confirmation
     fun handleDeadEnd() {
+        endHistory.add(Triple(endCount, myScore - strtMyScore, theirScore - strtTheirScore))
         endCount++
         meClick = false
         themClick = false
@@ -217,7 +243,32 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
-    // Surface container with long press detection
+    // Update scores after editing an end
+    fun updateScoresAfterEdit(editedEnd: Triple<Int, Int, Int>, newUpScore: Int, newDownScore: Int) {
+        val index = endHistory.indexOfFirst { it.first == editedEnd.first }
+        if (index != -1) {
+            val oldUpScore = endHistory[index].second
+            val oldDownScore = endHistory[index].third
+            endHistory[index] = Triple(editedEnd.first, newUpScore, newDownScore)
+
+            // Adjust running totals from this end onward
+            val scoreAdjustmentUp = newUpScore - oldUpScore
+            val scoreAdjustmentDown = newDownScore - oldDownScore
+            for (i in index until endHistory.size) {
+                endHistory[i] = Triple(
+                    endHistory[i].first,
+                    endHistory[i].second + scoreAdjustmentUp,
+                    endHistory[i].third + scoreAdjustmentDown
+                )
+            }
+            // Update current scores
+            myScore += scoreAdjustmentUp
+            theirScore += scoreAdjustmentDown
+            strtMyScore = myScore
+            strtTheirScore = theirScore
+        }
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -233,7 +284,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         color = Color.Black
     ) {
         if (gameOver) {
-            // Game Over Screen
+            // Game Over Screen: Show winner and options
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -368,6 +419,22 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         tint = Color.Red
                     )
                 }
+                // Blue Circle Button for History (Sinking Sun Effect)
+                Button(
+                    onClick = {
+                        showHistoryDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Blue,
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .offset(x = 0.dp, y = 20.dp),
+                    shape = CircleShape
+                ) {
+                    Text("H", fontSize = 12.sp, textAlign = TextAlign.Center)
+                }
                 Text(
                     "END",
                     modifier = Modifier.offset(x = 22.dp, y = 0.dp),
@@ -378,8 +445,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     onClick = {
                         if (!gameOver) {
                             if (!meClick && !themClick) {
-                                showDeadEndDialog = true // Show confirmation dialog
+                                showDeadEndDialog = true
                             } else {
+                                endHistory.add(Triple(endCount, myScore - strtMyScore, theirScore - strtTheirScore))
                                 endCount++
                                 meClick = false
                                 themClick = false
@@ -398,7 +466,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
         }
 
-        // Exit Dialog
+        // Exit Dialog for long press
         if (showExitDialog) {
             AlertDialog(
                 onDismissRequest = { showExitDialog = false },
@@ -441,7 +509,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(
                         onClick = {
                             showDeadEndDialog = false
-                            handleDeadEnd() // Proceed with dead end logic
+                            handleDeadEnd()
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Green,
@@ -452,6 +520,155 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 dismissButton = {
                     Button(
                         onClick = { showDeadEndDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.Black
+                        )
+                    ) { Text("Cancel") }
+                },
+                containerColor = Color.Black,
+                titleContentColor = Color.White,
+                textContentColor = Color.White
+            )
+        }
+
+        // History Dialog
+        if (showHistoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showHistoryDialog = false },
+                title = { Text("End History") },
+                text = {
+                    if (endHistory.isEmpty()) {
+                        Text("No ends played yet.", color = Color.White)
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            // Display ends in reverse order (last end first)
+                            endHistory.reversed().forEach { (endNum, upScore, downScore) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "$endNum:    $upScore    $downScore",
+                                        color = Color.White,
+                                        fontSize = 14.sp
+                                    )
+                                    Button(
+                                        onClick = { editingEnd = Triple(endNum, upScore, downScore) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Blue,
+                                            contentColor = Color.White
+                                        ),
+                                        modifier = Modifier.size(width = 60.dp, height = 24.dp)
+                                    ) {
+                                        Text("Edit", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showHistoryDialog = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Green,
+                            contentColor = Color.Black
+                        )
+                    ) { Text("Close") }
+                },
+                dismissButton = {},
+                containerColor = Color.Black,
+                titleContentColor = Color.White,
+                textContentColor = Color.White
+            )
+        }
+
+        // Edit End Dialog
+        if (editingEnd != null) {
+            var upScoreInput by remember { mutableStateOf(editingEnd!!.second.toString()) }
+            var downScoreInput by remember { mutableStateOf(editingEnd!!.third.toString()) }
+
+            AlertDialog(
+                onDismissRequest = { editingEnd = null },
+                title = { Text("Edit End ${editingEnd!!.first}") },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Up Score:", color = Color.White, fontSize = 14.sp)
+                            TextField(
+                                value = upScoreInput,
+                                onValueChange = { upScoreInput = it },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(40.dp),
+                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.White),
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.DarkGray,
+                                    unfocusedContainerColor = Color.DarkGray,
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Down Score:", color = Color.Yellow, fontSize = 14.sp)
+                            TextField(
+                                value = downScoreInput,
+                                onValueChange = { downScoreInput = it },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(40.dp),
+                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.Yellow),
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.DarkGray,
+                                    unfocusedContainerColor = Color.DarkGray,
+                                    focusedTextColor = Color.Yellow,
+                                    unfocusedTextColor = Color.Yellow,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val newUpScore = upScoreInput.toIntOrNull() ?: editingEnd!!.second
+                            val newDownScore = downScoreInput.toIntOrNull() ?: editingEnd!!.third
+                            updateScoresAfterEdit(editingEnd!!, newUpScore, newDownScore)
+                            editingEnd = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Green,
+                            contentColor = Color.Black
+                        )
+                    ) { Text("Save") }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { editingEnd = null },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Red,
                             contentColor = Color.Black
