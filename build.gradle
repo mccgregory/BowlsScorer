@@ -4,8 +4,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.8.0'  // Update to 8.2.0 for compileSdk 34
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'
+        classpath 'com.android.tools.build:gradle:8.8.0'  // This is fine (though 8.2.0 is more stable with SDK 34)
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'  // Updated to 1.9.24
     }
 }
 

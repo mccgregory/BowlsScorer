@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.MaterialTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -41,7 +43,7 @@ class MainActivity : ComponentActivity() {
                 setContent {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
+                        color = MaterialTheme.colors.background
                     ) { MyApp(modifier = Modifier.fillMaxSize()) }
                 }
             }
@@ -118,7 +120,7 @@ fun OnboardingScreen(
             Button(
                 modifier = Modifier
                     .padding(vertical = 15.dp)
-                    .offset(y = -20.dp),
+                    .offset(y = (-20).dp),
                 onClick = {
                     onContinueClicked()
                     gameSinglesClicked()
@@ -127,7 +129,7 @@ fun OnboardingScreen(
             Button(
                 modifier = Modifier
                     .padding(vertical = 10.dp)
-                    .offset(y = -30.dp),
+                    .offset(y = (-30).dp),
                 onClick = onContinueClicked
             ) { Text("Doubles") }
         }
@@ -143,19 +145,13 @@ fun OnboardingScreen(
                             showExitDialog = false
                             context.finish()
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.Black
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)
                     ) { Text("Confirm") }
                 },
                 dismissButton = {
                     Button(
                         onClick = { showExitDialog = false },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
                     ) { Text("Cancel") }
                 },
                 containerColor = Color.Black,
@@ -168,12 +164,13 @@ fun OnboardingScreen(
 
 @Composable
 fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Modifier) {
-    val mContext = LocalContext.current     // For Toast
-    val view = LocalView.current            // For CLICK sound
+    //---- State Declarations ----
+    val mContext = LocalContext.current
+    val view = LocalView.current
     var showExitDialog by remember { mutableStateOf(false) }
     var showDeadEndDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
-    var editingEnd by remember { mutableStateOf<Triple<Int, Int, Int>?>(null) } // Track the end being edited
+    var editingEnd by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     var myScore by rememberSaveable { mutableStateOf(0) }
@@ -187,104 +184,82 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var bowls by rememberSaveable { mutableStateOf(0) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
 
-    // Store history of ends: list of (end number, Up score, Down score)
+    var tempMyScore by remember { mutableStateOf(0) }
+    var tempTheirScore by remember { mutableStateOf(0) }
+    var tempMeClick by remember { mutableStateOf(false) }
+    var tempThemClick by remember { mutableStateOf(false) }
+    var tempBowls by remember { mutableStateOf(0) }
+
     val endHistory = rememberSaveable(
         saver = Saver(
-            save = { history ->
+            save = { history: MutableList<Triple<Int, Int, Int>> ->
                 history.map { triple -> listOf(triple.first, triple.second, triple.third) }
             },
-            restore = { saved ->
-                val list = mutableListOf<Triple<Int, Int, Int>>()
-                saved.forEach { innerList ->
-                    list.add(Triple(innerList[0], innerList[1], innerList[2]))
-                }
-                list.toMutableStateList() // Convert to SnapshotStateList
+            restore = { saved: List<List<Int>> ->
+                mutableListOf<Triple<Int, Int, Int>>().apply {
+                    saved.forEach { innerList -> add(Triple(innerList[0], innerList[1], innerList[2])) }
+                }.toMutableStateList()
             }
         )
-    ) {
-        mutableStateListOf<Triple<Int, Int, Int>>()
-    }
+    ) { mutableStateListOf<Triple<Int, Int, Int>>() }
 
-    // Set max points per end based on game type
-    if (gameSingles) { maxClick = 2 + 1 } // Max per end is 2
-    else { maxClick = 4 + 1 }             // Max per end is 4
-
-    // Check for game over (winner at 21)
+    //---- Game Logic ----
+    if (gameSingles) { maxClick = 2 + 1 } else { maxClick = 4 + 1 }
     LaunchedEffect(myScore, theirScore) {
-        if (myScore >= 21 || theirScore >= 21) {
-            gameOver = true
-        }
+        if (myScore >= 21 || theirScore >= 21) gameOver = true
     }
 
-    // Reset game state for a new game
     fun resetGame() {
-        myScore = 0
-        theirScore = 0
-        strtMyScore = 0
-        strtTheirScore = 0
-        endCount = 1
-        meClick = false
-        themClick = false
-        bowls = 0
-        gameOver = false
-        endHistory.clear() // Clear history on new game
+        myScore = 0; theirScore = 0; strtMyScore = 0; strtTheirScore = 0
+        endCount = 1; meClick = false; themClick = false; bowls = 0
+        gameOver = false; endHistory.clear()
     }
 
-    // Handle dead end logic after confirmation
-    fun handleDeadEnd() {
-        endHistory.add(Triple(endCount, myScore - strtMyScore, theirScore - strtTheirScore))
-        endCount++
-        meClick = false
-        themClick = false
-        bowls = 0
-        strtMyScore = myScore
-        strtTheirScore = theirScore
-        mToast(mContext)
+    fun completeEnd() {
+        endHistory.add(Triple(endCount, myScore, theirScore))
+        endCount++; meClick = false; themClick = false; bowls = 0
+        strtMyScore = myScore; strtTheirScore = theirScore
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
-    // Update scores after editing an end
-    fun updateScoresAfterEdit(editedEnd: Triple<Int, Int, Int>, newUpScore: Int, newDownScore: Int) {
-        val index = endHistory.indexOfFirst { it.first == editedEnd.first }
+    fun completeEditEnd() {
+        val index = endHistory.indexOfFirst { it.first == editingEnd }
         if (index != -1) {
             val oldUpScore = endHistory[index].second
             val oldDownScore = endHistory[index].third
-            endHistory[index] = Triple(editedEnd.first, newUpScore, newDownScore)
-
-            // Adjust running totals from this end onward
-            val scoreAdjustmentUp = newUpScore - oldUpScore
-            val scoreAdjustmentDown = newDownScore - oldDownScore
-            for (i in index until endHistory.size) {
-                endHistory[i] = Triple(
-                    endHistory[i].first,
-                    endHistory[i].second + scoreAdjustmentUp,
-                    endHistory[i].third + scoreAdjustmentDown
-                )
+            val upDiff = tempMyScore - oldUpScore
+            val downDiff = tempTheirScore - oldDownScore
+            endHistory[index] = Triple(editingEnd!!, tempMyScore, tempTheirScore)
+            for (i in index + 1 until endHistory.size) {
+                endHistory[i] = Triple(endHistory[i].first, endHistory[i].second + upDiff, endHistory[i].third + downDiff)
             }
-            // Update current scores
-            myScore += scoreAdjustmentUp
-            theirScore += scoreAdjustmentDown
-            strtMyScore = myScore
-            strtTheirScore = theirScore
+            myScore += upDiff; theirScore += downDiff
+            strtMyScore = myScore; strtTheirScore = theirScore
+        }
+        editingEnd = null
+        view.playSoundEffect(SoundEffectConstants.CLICK)
+    }
+
+    fun startEditing(endNum: Int) {
+        val end = endHistory.firstOrNull { it.first == endNum }
+        if (end != null) {
+            tempMyScore = end.second; tempTheirScore = end.third
+            tempMeClick = false; tempThemClick = false; tempBowls = 0
+            editingEnd = endNum
         }
     }
 
+    //---- UI Layout ----
     Surface(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = {
-                        coroutineScope.launch {
-                            showExitDialog = true
-                        }
-                    }
-                )
+                detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } })
             },
-        color = Color.Black
+        color = if (editingEnd != null) Color(0xFFB0B0B0) else Color.Black
     ) {
+        //---- Game Over Screen ----
         if (gameOver) {
-            // Game Over Screen: Show winner and options
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -302,382 +277,158 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceAround,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            resetGame()
-                            onNewGame()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("New Game") }
-                    Button(
-                        onClick = { mContext.finish() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Exit") }
+                    Button(onClick = { resetGame(); onNewGame() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("New Game") }
+                    Button(onClick = { mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Exit") }
                 }
             }
-        } else {
-            // Main Scoring Screen
+        }
+        //---- Edit Mode Screen ----
+        else if (editingEnd != null) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(
-                    space = 2.dp,
-                    alignment = Alignment.CenterVertically
-                ),
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    "Up",
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .offset(x = 35.dp, y = -30.dp),
-                    color = Color.White,
-                    fontSize = 25.sp
-                )
-
-                Button(
-                    onClick = {
-                        if (!gameOver && (!themClick && !meClick || meClick)) {
-                            meClick = true
-                            bowls++
-                            if (bowls < maxClick) {
-                                myScore++
-                            }
-                        }
+                Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-30).dp), color = Color.White, fontSize = 25.sp)
+                Surface(
+                    modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick) tempMyScore++ } },
+                            onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1) } }
+                        )
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .offset(x = 2.dp, y = (-50).dp)
-                ) { Text("$myScore", fontSize = 50.sp) }
+                    color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)
+                ) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempMyScore", color = Color.White, fontSize = 50.sp) } }
             }
-
             Column(
-                verticalArrangement = Arrangement.spacedBy(
-                    space = 2.dp,
-                    alignment = Alignment.CenterVertically
-                ),
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.End
             ) {
-                Text(
-                    "Down",
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .offset(x = -35.dp, y = -30.dp),
-                    color = Color.Yellow,
-                    fontSize = 25.sp
-                )
-
-                Button(
-                    onClick = {
-                        if (!gameOver && (!themClick && !meClick || themClick)) {
-                            themClick = true
-                            bowls++
-                            if (bowls < maxClick) {
-                                theirScore++
-                            }
-                        }
+                Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-30).dp), color = Color.Yellow, fontSize = 25.sp)
+                Surface(
+                    modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick) tempTheirScore++ } },
+                            onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1) } }
+                        )
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.Yellow
-                    ),
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .offset(x = -10.dp, y = -50.dp)
-                ) { Text("$theirScore", fontSize = 50.sp) }
+                    color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)
+                ) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempTheirScore", color = Color.Yellow, fontSize = 50.sp) } }
             }
-
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.padding(24.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        meClick = false
-                        themClick = false
-                        bowls = 0
-                        myScore = strtMyScore
-                        theirScore = strtTheirScore
+                IconButton(onClick = { tempMeClick = false; tempThemClick = false; tempBowls = 0; val end = endHistory.firstOrNull { it.first == editingEnd }; if (end != null) { tempMyScore = end.second; tempTheirScore = end.third } }, modifier = Modifier.size(40.dp).offset(x = (-10).dp, y = (-10).dp)) { Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red) }
+                Button(onClick = { editingEnd = null }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black), modifier = Modifier.size(40.dp).offset(x = 0.dp, y = 20.dp), shape = CircleShape) { Text("X", fontSize = 12.sp, textAlign = TextAlign.Center) }
+                Text("END", modifier = Modifier.offset(x = 22.dp, y = 0.dp), color = Color.Green, fontSize = 25.sp)
+                Button(onClick = { completeEditEnd() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black), modifier = Modifier.offset(x = 20.dp, y = 0.dp)) { Text("Save", fontSize = 20.sp) }
+            }
+        }
+        //---- Main Scoring Screen ----
+        else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-30).dp), color = Color.White, fontSize = 25.sp)
+                Surface(
+                    modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } },
+                            onLongPress = { if (myScore > 0) { myScore--; bowls = maxOf(0, bowls - 1) } }
+                        )
                     },
-                    modifier = Modifier
-                        .size(40.dp)
-                        .offset(x = -10.dp, y = -10.dp)
+                    color = Color.Black, shape = RoundedCornerShape(8.dp)
+                ) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 50.sp) } }
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-30).dp), color = Color.Yellow, fontSize = 25.sp)
+                Surface(
+                    modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } },
+                            onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }
+                        )
+                    },
+                    color = Color.Black, shape = RoundedCornerShape(8.dp)
+                ) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 50.sp) } }
+            }
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Bottom,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Clear,
-                        contentDescription = "Clear",
-                        modifier = Modifier.size(40.dp),
-                        tint = Color.Red
-                    )
+                    IconButton(
+                        onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore },
+                        modifier = Modifier.size(40.dp)
+                    ) { Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red) }
+                    Text("END", color = Color.Green, fontSize = 25.sp)
+                    Button(
+                        onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
+                        modifier = Modifier.size(width = 50.dp, height = 40.dp)
+                    ) { Text("$endCount", fontSize = 20.sp) }
                 }
-                // Blue Circle Button for History (Sinking Sun Effect)
                 Button(
-                    onClick = {
-                        showHistoryDialog = true
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Blue,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .offset(x = 0.dp, y = 20.dp),
+                    onClick = { showHistoryDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+                    modifier = Modifier.size(40.dp).offset(y = 20.dp),
                     shape = CircleShape
-                ) {
-                    Text("H", fontSize = 12.sp, textAlign = TextAlign.Center)
-                }
-                Text(
-                    "END",
-                    modifier = Modifier.offset(x = 22.dp, y = 0.dp),
-                    color = Color.Green,
-                    fontSize = 25.sp
-                )
-                Button(
-                    onClick = {
-                        if (!gameOver) {
-                            if (!meClick && !themClick) {
-                                showDeadEndDialog = true
-                            } else {
-                                endHistory.add(Triple(endCount, myScore - strtMyScore, theirScore - strtTheirScore))
-                                endCount++
-                                meClick = false
-                                themClick = false
-                                bowls = 0
-                                strtMyScore = myScore
-                                strtTheirScore = theirScore
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Green,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier.offset(x = 20.dp, y = 0.dp)
-                ) { Text("$endCount", fontSize = 20.sp) }
+                ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
             }
         }
 
-        // Exit Dialog for long press
+        //---- Dialogs ----
         if (showExitDialog) {
             AlertDialog(
                 onDismissRequest = { showExitDialog = false },
                 title = { Text("Exit App") },
                 text = { Text("Are you sure you want to exit?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showExitDialog = false
-                            mContext.finish()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Confirm") }
-                },
-                dismissButton = {
-                    Button(
-                        onClick = { showExitDialog = false },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Cancel") }
-                },
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                textContentColor = Color.White
+                confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Confirm") } },
+                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
+                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
-
-        // Dead End Confirmation Dialog
         if (showDeadEndDialog) {
             AlertDialog(
                 onDismissRequest = { showDeadEndDialog = false },
                 title = { Text("Confirm Dead End") },
                 text = { Text("This is a dead end. Move to next end?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showDeadEndDialog = false
-                            handleDeadEnd()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Confirm") }
-                },
-                dismissButton = {
-                    Button(
-                        onClick = { showDeadEndDialog = false },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Cancel") }
-                },
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                textContentColor = Color.White
+                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Confirm") } },
+                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Cancel") } },
+                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
-
-        // History Dialog
         if (showHistoryDialog) {
             AlertDialog(
                 onDismissRequest = { showHistoryDialog = false },
                 title = { Text("End History") },
                 text = {
                     if (endHistory.isEmpty()) {
-                        Text("No ends played yet.", color = Color.White)
+                        Text("No ends played yet.", color = Color.White, fontSize = 26.sp)
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState())
-                        ) {
-                            // Display ends in reverse order (last end first)
+                        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                             endHistory.reversed().forEach { (endNum, upScore, downScore) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "$endNum:    $upScore    $downScore",
-                                        color = Color.White,
-                                        fontSize = 14.sp
-                                    )
-                                    Button(
-                                        onClick = { editingEnd = Triple(endNum, upScore, downScore) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color.Blue,
-                                            contentColor = Color.White
-                                        ),
-                                        modifier = Modifier.size(width = 60.dp, height = 24.dp)
-                                    ) {
-                                        Text("Edit", fontSize = 12.sp)
-                                    }
+                                Row(modifier = Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text("$endNum:    $upScore    $downScore", color = Color.White, fontSize = 26.sp)
+                                    Button(onClick = { startEditing(endNum); showHistoryDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White), modifier = Modifier.size(width = 40.dp, height = 20.dp)) { Text("Edit", fontSize = 10.sp) }
                                 }
                             }
                         }
                     }
                 },
-                confirmButton = {
-                    Button(
-                        onClick = { showHistoryDialog = false },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Close") }
-                },
+                confirmButton = { Button(onClick = { showHistoryDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Close") } },
                 dismissButton = {},
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                textContentColor = Color.White
-            )
-        }
-
-        // Edit End Dialog
-        if (editingEnd != null) {
-            var upScoreInput by remember { mutableStateOf(editingEnd!!.second.toString()) }
-            var downScoreInput by remember { mutableStateOf(editingEnd!!.third.toString()) }
-
-            AlertDialog(
-                onDismissRequest = { editingEnd = null },
-                title = { Text("Edit End ${editingEnd!!.first}") },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Up Score:", color = Color.White, fontSize = 14.sp)
-                            TextField(
-                                value = upScoreInput,
-                                onValueChange = { upScoreInput = it },
-                                modifier = Modifier
-                                    .width(80.dp)
-                                    .height(40.dp),
-                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.White),
-                                singleLine = true,
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.DarkGray,
-                                    unfocusedContainerColor = Color.DarkGray,
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Down Score:", color = Color.Yellow, fontSize = 14.sp)
-                            TextField(
-                                value = downScoreInput,
-                                onValueChange = { downScoreInput = it },
-                                modifier = Modifier
-                                    .width(80.dp)
-                                    .height(40.dp),
-                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.Yellow),
-                                singleLine = true,
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.DarkGray,
-                                    unfocusedContainerColor = Color.DarkGray,
-                                    focusedTextColor = Color.Yellow,
-                                    unfocusedTextColor = Color.Yellow,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val newUpScore = upScoreInput.toIntOrNull() ?: editingEnd!!.second
-                            val newDownScore = downScoreInput.toIntOrNull() ?: editingEnd!!.third
-                            updateScoresAfterEdit(editingEnd!!, newUpScore, newDownScore)
-                            editingEnd = null
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Green,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Save") }
-                },
-                dismissButton = {
-                    Button(
-                        onClick = { editingEnd = null },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red,
-                            contentColor = Color.Black
-                        )
-                    ) { Text("Cancel") }
-                },
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                textContentColor = Color.White
+                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
     }
