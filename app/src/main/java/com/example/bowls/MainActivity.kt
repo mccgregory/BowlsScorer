@@ -29,55 +29,35 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSplashScreen().apply {
+            setKeepOnScreenCondition { false } // Show until Compose is ready
+        }
         setContent {
-            MyApp(modifier = Modifier.fillMaxSize())
-        }
-    }
-}
-
-@Composable
-fun MyApp(modifier: Modifier = Modifier) {
-    var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
-    var gameSingles by rememberSaveable { mutableStateOf(false) }
-    var showSplash by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        delay(1500L)
-        showSplash = false
-    }
-
-    if (showSplash) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            Text(
-                "Splash Screen",
-                color = Color.White,
-                fontSize = 24.sp,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-    } else {
-        Surface(modifier) {
-            if (shouldShowOnboarding) {
-                OnboardingScreen(
-                    gameSinglesClicked = { gameSingles = true },
-                    onContinueClicked = { shouldShowOnboarding = false }
-                )
-            } else {
-                Scorer(
-                    gameSingles = gameSingles,
-                    onNewGame = {
-                        shouldShowOnboarding = true
-                        gameSingles = false
-                    }
-                )
+            Surface(modifier = Modifier.fillMaxSize()) {
+                var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
+                var gameSingles by rememberSaveable { mutableStateOf(false) }
+                if (shouldShowOnboarding) {
+                    OnboardingScreen(
+                        gameSinglesClicked = { gameSingles = true },
+                        onContinueClicked = { shouldShowOnboarding = false }
+                    )
+                } else {
+                    Scorer(
+                        gameSingles = gameSingles,
+                        onNewGame = {
+                            shouldShowOnboarding = true
+                            gameSingles = false
+                        }
+                    )
+                }
             }
         }
     }
@@ -187,6 +167,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             theirScore += downDiff
             strtMyScore = myScore
             strtTheirScore = theirScore
+            Toast.makeText(mContext, "End $editingEnd updated to $tempMyScore-$tempTheirScore", Toast.LENGTH_SHORT).show()
         }
         editingEnd = null
         view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -199,6 +180,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
             strtTheirScore = theirScore
+            Toast.makeText(mContext, "End $addingEnd replaced with $tempAddUpScore-$tempAddDownScore", Toast.LENGTH_SHORT).show()
             addingEnd = null
             tempAddUpScore = 0
             tempAddDownScore = 0
@@ -305,7 +287,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         onClick = { tempMeClick = false; tempThemClick = false; tempBowls = 0; val end = endHistory.firstOrNull { it.first == editingEnd }; if (end != null) { tempMyScore = end.second; tempTheirScore = end.third } },
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(36.dp), tint = Color.Red)
+                        Icon(Icons.Filled.Clear, "Reset", modifier = Modifier.size(36.dp), tint = Color.Red)
                     }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -356,7 +338,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     }
                 }
                 Text(
-                    "New End $addingEnd",
+                    "Replacing End $addingEnd",
                     color = Color(0xFF1E90FF),
                     fontSize = 20.sp,
                     modifier = Modifier.padding(top = 8.dp)
@@ -370,7 +352,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         onClick = { tempMeClick = false; tempThemClick = false; tempBowls = 0; tempAddUpScore = 0; tempAddDownScore = 0 },
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(36.dp), tint = Color.Red)
+                        Icon(Icons.Filled.Clear, "Reset", modifier = Modifier.size(36.dp), tint = Color.Red)
                     }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -384,7 +366,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             onClick = { completeAddEnd() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
                             modifier = Modifier.size(width = 60.dp, height = 28.dp)
-                        ) { Text("Add", fontSize = 12.sp) }
+                        ) { Text("Save", fontSize = 12.sp) }
                     }
                 }
             }
@@ -398,10 +380,23 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }, onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 50.sp) } }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    IconButton(onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore }, modifier = Modifier.size(40.dp)) { Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    IconButton(onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore }, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
+                    }
                     Text("END", color = Color.Green, fontSize = 25.sp)
-                    Button(onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black), modifier = Modifier.size(width = 50.dp, height = 40.dp)) { Text("$endCount", fontSize = 20.sp) }
+                    Button(
+                        onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
+                        modifier = Modifier
+                            .height(40.dp)
+                            .width(80.dp) // Widened further
+                            .offset(x = (-30).dp) // Pushed closer to edge
+                    ) { Text("$endCount", fontSize = 16.sp, textAlign = TextAlign.Center) } // Smaller font, centered
                 }
                 Button(
                     onClick = {
@@ -451,27 +446,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             "End History",
                             color = Color(0xFFD3D3D3),
                             fontSize = 24.sp,
-                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp, bottom = 12.dp)
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp)
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Button(
-                                onClick = { showHistoryDialog = false },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32), contentColor = Color.Black),
-                                modifier = Modifier.size(width = 50.dp, height = 24.dp)
-                            ) { Text("Close", fontSize = 10.sp) }
-                            Button(
-                                onClick = {
-                                    val nextEndNum = endCount + 1
-                                    startAdding(nextEndNum)
-                                    showHistoryDialog = false
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E90FF), contentColor = Color.White),
-                                modifier = Modifier.size(width = 40.dp, height = 24.dp).padding(start = 4.dp)
-                            ) { Text("Add", fontSize = 10.sp) }
-                        }
                         if (endHistory.isEmpty()) {
                             Text(
                                 "No ends yet",
