@@ -1,0 +1,7 @@
+# Android Studio build files
+build/
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
