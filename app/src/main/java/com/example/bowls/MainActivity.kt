@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
@@ -37,11 +36,12 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        installSplashScreen().apply {
-            setKeepOnScreenCondition { false } // Show until Compose is ready
-        }
+
+        // Set the main UI using Jetpack Compose.
+        // This is where your app's main content is rendered after the splash screen (handled by SplashActivity).
         setContent {
             Surface(modifier = Modifier.fillMaxSize()) {
+                // State to control whether the onboarding screen is shown.
                 var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
                 var gameSingles by rememberSaveable { mutableStateOf(false) }
                 if (shouldShowOnboarding) {
