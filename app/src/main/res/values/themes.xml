@@ -1,14 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme for SplashActivity -->
     <style name="SplashTheme" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Set a solid black background to avoid flicker during SplashActivity transition -->
-        <item name="android:windowBackground">@android:color/black</item>
-        <!-- No need for SplashScreen API attributes (e.g., windowSplashScreenAnimatedIcon) since SplashActivity handles rendering -->
+        <!-- Preload splash_background.png to match the Compose UI -->
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <!-- Force full-screen and hide status bar -->
+        <item name="android:windowFullscreen">true</item>
+        <!-- Remove system overlays -->
+        <item name="android:windowContentOverlay">@null</item>
+        <!-- Prevent window animations during transition -->
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
-
-    <!-- Default theme for the app (used by MainActivity) -->
     <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Match the app's black UI background -->
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>
