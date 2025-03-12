@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+// Greg edit App Start screen below
 @Composable
 fun OnboardingScreen(
     gameSinglesClicked: () -> Unit,
@@ -76,6 +76,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .background(Color.Black) // Set black background
             .pointerInput(Unit) {
                 detectTapGestures(
                     onLongPress = {
@@ -91,10 +92,32 @@ fun OnboardingScreen(
             verticalArrangement = Arrangement.SpaceAround,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Bowls Scorer", modifier = Modifier.padding(8.dp).offset(y = 10.dp))
-            Text("Choose game...", modifier = Modifier.padding(8.dp).offset(y = 0.dp))
-            Button(modifier = Modifier.padding(vertical = 15.dp).offset(y = (-20).dp), onClick = { onContinueClicked(); gameSinglesClicked() }) { Text("Singles") }
-            Button(modifier = Modifier.padding(vertical = 10.dp).offset(y = (-30).dp), onClick = onContinueClicked) { Text("Doubles") }
+            Text(
+                text = "Welcome to Bowls Scorer", // Updated message
+                color = Color.White, // Match 'Up' score color
+                modifier = Modifier.padding(8.dp).offset(y = 20.dp)
+            )
+            Button(
+//                modifier = Modifier.padding(vertical = 15.dp).offset(y = (-20).dp),
+                modifier = Modifier.padding(vertical = 15.dp).offset(y = (15).dp),
+                onClick = { onContinueClicked(); gameSinglesClicked() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black) // Green button with black text
+            ) {
+                Text("Singles")
+            }
+            Button(
+//                modifier = Modifier.padding(vertical = 10.dp).offset(y = (-30).dp),
+                modifier = Modifier.padding(vertical = 10.dp).offset(y = (10).dp),
+                onClick = onContinueClicked,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black) // Green button with black text
+            ) {
+                Text("Doubles")
+            }
+            Text(
+                text = "Choose game...",
+                color = Color.White, // Match 'Up' score color
+                modifier = Modifier.padding(8.dp).offset(y = 0.dp)
+            )
         }
 
         if (showExitDialog) {
@@ -109,7 +132,7 @@ fun OnboardingScreen(
         }
     }
 }
-
+// Greg edit the App Start Screen above
 @Composable
 fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Modifier) {
     val mContext = LocalContext.current
