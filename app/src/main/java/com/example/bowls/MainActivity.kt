@@ -268,6 +268,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(onClick = { mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Exit") }
                 }
             }
+// Greg edit the END History Screen Below
         } else if (editingEnd != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -297,7 +298,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
                 Text(
                     "Editing End $editingEnd",
-                    color = Color(0xFF1E90FF),
+                    color = Color(0xFFFFFFFF),
                     fontSize = 20.sp,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -333,7 +334,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     }
                 }
             }
-        } else if (addingEnd != null) {
+        }// Greg edit the END History Screen Above
+
+        else if (addingEnd != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Top,
