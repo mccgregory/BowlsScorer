@@ -372,12 +372,24 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.Start) {
-                Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-30).dp), color = Color.White, fontSize = 25.sp)
-                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } }, onLongPress = { if (myScore > 0) { myScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 50.sp) } }
+                // ==== Greg Up Label Adjustment =====
+                // Adjust the 'Up' label position below. Increase y value to move down (e.g., change -30.dp to -25.dp or 0.dp).
+                // Example: offset(y = -25.dp) moves it 5dp down; offset(y = 0.dp) centers it vertically.
+                Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-25).dp), color = Color.White, fontSize = 25.sp)
+                // ==== Greg Up Label Adjustment =====
+                // ==== Greg Up SCORE Adjustment =====
+                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } }, onLongPress = { if (myScore > 0) { myScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 60.sp) } }
+                // ==== Greg Up SCORE Adjustment =====
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.End) {
-                Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-30).dp), color = Color.Yellow, fontSize = 25.sp)
-                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }, onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 50.sp) } }
+                // ==== Greg Down Label Adjustment =====
+                // Adjust the 'Down' label position below. Increase y value to move down (e.g., change -30.dp to -25.dp or 0.dp).
+                // Example: offset(y = -25.dp) moves it 5dp down; offset(y = 0.dp) centers it vertically.
+                Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-25).dp), color = Color.Yellow, fontSize = 25.sp)
+                // ==== Greg Down Label Adjustment =====
+                // ==== Greg Down SCORE Adjustment =====
+                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }, onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
+                // ==== Greg Down SCORE Adjustment =====
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                 // ==== Greg END Button =====
