@@ -380,24 +380,48 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }, onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 50.sp) } }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+                // ==== Greg END Button =====
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore }, modifier = Modifier.size(40.dp)) {
+                    IconButton(
+                        onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore },
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
                     }
-                    Text("END", color = Color.Green, fontSize = 25.sp)
-                    Button(
-                        onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                        modifier = Modifier
-                            .height(40.dp)
-                            .width(80.dp) // Widened further
-                            .offset(x = (-30).dp) // Pushed closer to edge
-                    ) { Text("$endCount", fontSize = 16.sp, textAlign = TextAlign.Center) } // Smaller font, centered
+                    Row {
+                        Text(
+                            text = "END",
+                            color = Color.Green,
+                            fontSize = 25.sp,
+                            modifier = Modifier
+                                .padding(end = 8.dp, top = 4.dp)
+                                .offset(x = 45.dp)                  // increased offset to move to the LHS
+                        )
+                        Button(
+                            onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .width(80.dp)
+                                .offset(x = 45.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Text(
+                                    text = "$endCount",
+                                    fontSize = 26.sp,
+                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp) // Negative offset to move text further left, for y -ve move it up
+                                )
+                            }
+                        }
+                    }
                 }
+                // ==== Greg END Button =====
                 Button(
                     onClick = {
                         showHistoryDialog = true
