@@ -18,3 +18,19 @@ The actual scoring on the Scoring Screen, UP or Down is achieved by clicking the
 The Winning score is 21, when a screen shows the winner and offers the options to play again or end the scoring by Exiting the App.
 
 A proper exit of the program can be made with a 'long-press' of the screen for 3 seconds - so this will close the App and tidy up.
+
+**NOTES ON DEVELOPMENT.**
+Developed on Android Studio Ladybug Feature Drop | 2024.2.2
+Build #AI-242.23726.103.2422.12816248, built on December 18, 2024
+Runtime version: 21.0.4+-12508038-b607.1 amd64
+VM: OpenJDK 64-Bit Server VM by JetBrains s.r.o.
+Toolkit: sun.awt.windows.WToolkit
+
+**Android studio is running on a Windows 10 x64 PC**
+Java is JDK-17 set in the File>Project Structure>Modules under Source Compatability and Target Compatability boxes 
+
+FOR COLLABORATING.
+==================
+The repository URL:
+https://github.com/mccgregory/BowlsScorer
+ 
