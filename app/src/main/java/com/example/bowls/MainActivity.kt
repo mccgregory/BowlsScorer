@@ -1,4 +1,4 @@
-package com.example.bowls           //false addition for new GitHub Commit
+package com.example.bowls
 
 import android.content.Context
 import android.os.Bundle
@@ -199,7 +199,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
             endHistory.add(Triple(addingEnd!!, tempAddUpScore, tempAddDownScore))
             endHistory.sortBy { it.first }
-            myScore = endHistory.sumOf { it.second }
+            myScore = endHistory.sumOf { it.second } // Recalculate totals
             theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
             strtTheirScore = theirScore
@@ -233,6 +233,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         addingEnd = endNum
     }
     fun replaceEnd(endNum: Int) {
+        editingEnd = null
         startAdding(endNum)
     }
 
@@ -250,7 +251,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
             }
         } else if (editingEnd != null) {
-            // Refined Initial Edit End History Screen
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
@@ -279,16 +279,10 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         }
                     }
                 }
-                Text(
-                    "Editing End $editingEnd",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
                 val originalEnd = endHistory.firstOrNull { it.first == editingEnd }
                 val hasChanges = originalEnd != null && (tempMyScore != originalEnd.second || tempTheirScore != originalEnd.third)
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -301,17 +295,22 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
-                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 12.sp) }
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
                     Button(
                         onClick = { replaceEnd(editingEnd!!) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
-                    ) { Text("ADD", fontSize = 12.sp) }
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp).offset(y = (-10).dp)  // ===Greg edit to move Button up 10dp
+                    ) { Text("ADD", fontSize = 14.sp) }
                 }
+                Text(
+                    "Editing End $editingEnd",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
         } else if (addingEnd != null) {
-            // Refined New Editing Screen
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
@@ -396,6 +395,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 ) {
                     Button(
                         onClick = {
+                            view.playSoundEffect(SoundEffectConstants.CLICK)
                             if (hasChanges) {
                                 completeAddEnd()
                             } else {
@@ -403,8 +403,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
-                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 12.sp) }
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
                 }
             }
         } else {
