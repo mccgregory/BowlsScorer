@@ -36,12 +36,8 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Set the main UI using Jetpack Compose.
-        // This is where your app's main content is rendered after the splash screen (handled by SplashActivity).
         setContent {
             Surface(modifier = Modifier.fillMaxSize()) {
-                // State to control whether the onboarding screen is shown.
                 var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
                 var gameSingles by rememberSaveable { mutableStateOf(false) }
                 if (shouldShowOnboarding) {
@@ -62,6 +58,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 // Greg edit App Start screen below
 @Composable
 fun OnboardingScreen(
@@ -76,7 +73,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black) // Set black background
+            .background(Color.Black)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onLongPress = {
@@ -93,29 +90,27 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Welcome to Bowls Scorer", // Updated message
-                color = Color.White, // Match 'Up' score color
+                text = "Welcome to Bowls Scorer",
+                color = Color.White,
                 modifier = Modifier.padding(8.dp).offset(y = 20.dp)
             )
             Button(
-//                modifier = Modifier.padding(vertical = 15.dp).offset(y = (-20).dp),
                 modifier = Modifier.padding(vertical = 15.dp).offset(y = (15).dp),
                 onClick = { onContinueClicked(); gameSinglesClicked() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black) // Green button with black text
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
             ) {
                 Text("Singles")
             }
             Button(
-//                modifier = Modifier.padding(vertical = 10.dp).offset(y = (-30).dp),
                 modifier = Modifier.padding(vertical = 10.dp).offset(y = (10).dp),
                 onClick = onContinueClicked,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black) // Green button with black text
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
             ) {
                 Text("Doubles")
             }
             Text(
                 text = "Choose game...",
-                color = Color.White, // Match 'Up' score color
+                color = Color.White,
                 modifier = Modifier.padding(8.dp).offset(y = 0.dp)
             )
         }
@@ -133,6 +128,7 @@ fun OnboardingScreen(
     }
 }
 // Greg edit the App Start Screen above
+
 @Composable
 fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Modifier) {
     val mContext = LocalContext.current
@@ -197,6 +193,10 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     }
     fun completeAddEnd() {
         if (addingEnd != null) {
+            val index = endHistory.indexOfFirst { it.first == addingEnd }
+            if (index != -1) {
+                endHistory.removeAt(index) // Remove the old end
+            }
             endHistory.add(Triple(addingEnd!!, tempAddUpScore, tempAddDownScore))
             endHistory.sortBy { it.first }
             myScore = endHistory.sumOf { it.second }
@@ -233,26 +233,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         addingEnd = endNum
     }
     fun replaceEnd(endNum: Int) {
-        val index = endHistory.indexOfFirst { it.first == endNum }
-        if (index != -1) {
-            endHistory.removeAt(index)
-        }
-        val updatedEndHistory = mutableListOf<Triple<Int, Int, Int>>()
-        for (end in endHistory) {
-            if (end.first > endNum) {
-                updatedEndHistory.add(Triple(end.first + 1, end.second, end.third))
-            } else {
-                updatedEndHistory.add(end)
-            }
-        }
-        endHistory.clear()
-        endHistory.addAll(updatedEndHistory)
-        endHistory.sortBy { it.first }
         startAdding(endNum)
-        myScore = endHistory.sumOf { it.second } + (if (addingEnd != null) tempAddUpScore else 0)
-        theirScore = endHistory.sumOf { it.third } + (if (addingEnd != null) tempAddDownScore else 0)
-        strtMyScore = myScore
-        strtTheirScore = theirScore
     }
 
     Surface(
@@ -268,8 +249,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(onClick = { mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Exit") }
                 }
             }
-// Greg edit the END History Screen Below
         } else if (editingEnd != null) {
+            // Refined Initial Edit End History Screen
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
@@ -280,75 +261,60 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.Start) {
-                        // ==== Greg Up Label Adjustment (End History Editing) =====
                         Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = (10).dp), color = Color.White, fontSize = 25.sp)
-                        // ==== Greg Up Label Adjustment (End History Editing) =====
-                        // ==== Greg Up Clickable Area Adjustment (End History Editing) =====
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
                             .offset(x = 2.dp, y = (0).dp)
                             .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick) tempMyScore++ } }, onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempMyScore", color = Color.White, fontSize = 50.sp) }
                         }
-                        // ==== Greg Up Clickable Area Adjustment (End History Editing) =====
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.End) {
-                        // ==== Greg Down Label Adjustment (End History Editing) =====
                         Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = (10).dp), color = Color.Yellow, fontSize = 25.sp)
-                        // ==== Greg Down Label Adjustment (End History Editing) =====
-                        // ==== Greg Down Clickable Area Adjustment (End History Editing) =====
                         Surface(modifier = Modifier
                             .padding(start = 4.dp, end = 8.dp)
                             .offset(x = (-10).dp, y = (0).dp)
                             .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick) tempTheirScore++ } }, onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempTheirScore", color = Color.Yellow, fontSize = 50.sp) }
                         }
-                        // ==== Greg Down Clickable Area Adjustment (End History Editing) =====
                     }
                 }
-                // ==== Greg Editing End Label Adjustment =====
                 Text(
                     "Editing End $editingEnd",
                     color = Color.White,
                     fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .offset(y = (-10).dp)
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-                // ==== Greg Editing End Label Adjustment =====
+                val originalEnd = endHistory.firstOrNull { it.first == editingEnd }
+                val hasChanges = originalEnd != null && (tempMyScore != originalEnd.second || tempTheirScore != originalEnd.third)
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp), // Added bottom padding
-                    horizontalArrangement = Arrangement.End, // Align to right like Scoring Screen
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing
-                    ) {
-                        Button(
-                            onClick = { editingEnd = null },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
-                            modifier = Modifier.size(width = 50.dp, height = 28.dp) // Reduced width
-                        ) { Text("Cancel", fontSize = 12.sp) }
-                        Button(
-                            onClick = { replaceEnd(editingEnd!!) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Yellow, contentColor = Color.Black),
-                            modifier = Modifier.size(width = 50.dp, height = 28.dp) // Reduced width
-                        ) { Text("Replace", fontSize = 12.sp) }
-                        Button(
-                            onClick = { completeEditEnd() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier.size(width = 50.dp, height = 28.dp) // Reduced width
-                        ) { Text("Save", fontSize = 12.sp) }
-                    }
+                    Button(
+                        onClick = {
+                            if (hasChanges) {
+                                completeEditEnd()
+                            } else {
+                                editingEnd = null
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
+                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
+                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 12.sp) }
+                    Button(
+                        onClick = { replaceEnd(editingEnd!!) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
+                    ) { Text("ADD", fontSize = 12.sp) }
                 }
             }
-        }
-// Greg edit the END History Screen Above
-
-        else if (addingEnd != null) {
+        } else if (addingEnd != null) {
+            // Refined New Editing Screen
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Top,
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -356,80 +322,101 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.Start) {
-                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp), color = Color.White, fontSize = 25.sp)
+                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = (10).dp), color = Color.White, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick) tempAddUpScore++ } }, onLongPress = { if (tempAddUpScore > 0) { tempAddUpScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
-                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempAddUpScore", color = Color.White, fontSize = 50.sp) }
+                            .offset(x = 2.dp, y = (0).dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = {
+                                        if (!tempThemClick && !tempMeClick || tempMeClick) {
+                                            tempMeClick = true;
+                                            tempBowls++;
+                                            if (tempBowls < maxClick) tempAddUpScore++
+                                        }
+                                    },
+                                    onLongPress = {
+                                        if (tempAddUpScore > 0) {
+                                            tempAddUpScore--;
+                                            tempBowls = maxOf(0, tempBowls - 1)
+                                        }
+                                    }
+                                )
+                            },
+                            color = Color(0xFFB0B0B0),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                Text("$tempAddUpScore", color = Color.White, fontSize = 50.sp)
+                            }
                         }
                     }
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.End) {
-                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp), color = Color.Yellow, fontSize = 25.sp)
+                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = (10).dp), color = Color.Yellow, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 4.dp, end = 8.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick) tempAddDownScore++ } }, onLongPress = { if (tempAddDownScore > 0) { tempAddDownScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
-                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempAddDownScore", color = Color.Yellow, fontSize = 50.sp) }
+                            .offset(x = (-10).dp, y = (0).dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = {
+                                        if (!tempThemClick && !tempMeClick || tempThemClick) {
+                                            tempThemClick = true;
+                                            tempBowls++;
+                                            if (tempBowls < maxClick) tempAddDownScore++
+                                        }
+                                    },
+                                    onLongPress = {
+                                        if (tempAddDownScore > 0) {
+                                            tempAddDownScore--;
+                                            tempBowls = maxOf(0, tempBowls - 1)
+                                        }
+                                    }
+                                )
+                            },
+                            color = Color(0xFFB0B0B0),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                Text("$tempAddDownScore", color = Color.Yellow, fontSize = 50.sp)
+                            }
                         }
                     }
                 }
                 Text(
-                    "Replacing End $addingEnd",
-                    color = Color(0xFF1E90FF),
+                    "Adding End $addingEnd",
+                    color = Color.White,
                     fontSize = 20.sp,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                val hasChanges = tempAddUpScore > 0 || tempAddDownScore > 0
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = { tempMeClick = false; tempThemClick = false; tempBowls = 0; tempAddUpScore = 0; tempAddDownScore = 0 },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(Icons.Filled.Clear, "Reset", modifier = Modifier.size(36.dp), tint = Color.Red)
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Button(
-                            onClick = { addingEnd = null },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
-                            modifier = Modifier.size(width = 60.dp, height = 28.dp)
-                        ) { Text("Cancel", fontSize = 12.sp) }
-                        Button(
-                            onClick = { completeAddEnd() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier.size(width = 60.dp, height = 28.dp)
-                        ) { Text("Save", fontSize = 12.sp) }
-                    }
+                    Button(
+                        onClick = {
+                            if (hasChanges) {
+                                completeAddEnd()
+                            } else {
+                                addingEnd = null
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
+                        modifier = Modifier.size(width = 50.dp, height = 28.dp)
+                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 12.sp) }
                 }
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.Start) {
-                // ==== Greg Up Label Adjustment =====
-                // Adjust the 'Up' label position below. Increase y value to move down (e.g., change -30.dp to -25.dp or 0.dp).
-                // Example: offset(y = -25.dp) moves it 5dp down; offset(y = 0.dp) centers it vertically.
                 Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-25).dp), color = Color.White, fontSize = 25.sp)
-                // ==== Greg Up Label Adjustment =====
-                // ==== Greg Up SCORE Adjustment =====
-//                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } }, onLongPress = { if (myScore > 0) { myScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 60.sp) } }
-                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ }  }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 60.sp) } }
-                // ==== Greg Up SCORE Adjustment =====
+                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 60.sp) } }
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.End) {
-                // ==== Greg Down Label Adjustment =====
-                // Adjust the 'Down' label position below. Increase y value to move down (e.g., change -30.dp to -25.dp or 0.dp).
-                // Example: offset(y = -25.dp) moves it 5dp down; offset(y = 0.dp) centers it vertically.
                 Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-25).dp), color = Color.Yellow, fontSize = 25.sp)
-                // ==== Greg Down Label Adjustment =====
-                // ==== Greg Down SCORE Adjustment =====
-//                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }, onLongPress = { if (theirScore > 0) { theirScore--; bowls = maxOf(0, bowls - 1) } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
-                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ }  }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
-                // ==== Greg Down SCORE Adjustment =====
+                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-                // ==== Greg END Button =====
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -445,17 +432,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             text = "END",
                             color = Color.Green,
                             fontSize = 25.sp,
-                            modifier = Modifier
-                                .padding(end = 8.dp, top = 4.dp)
-                                .offset(x = 45.dp)                  // increased offset to move to the LHS
+                            modifier = Modifier.padding(end = 8.dp, top = 4.dp).offset(x = 45.dp)
                         )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(80.dp)
-                                .offset(x = 45.dp)
+                            modifier = Modifier.height(40.dp).width(80.dp).offset(x = 45.dp)
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -464,13 +446,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                 Text(
                                     text = "$endCount",
                                     fontSize = 26.sp,
-                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp) // Negative offset to move text further left, for y -ve move it up
+                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp)
                                 )
                             }
                         }
                     }
                 }
-                // ==== Greg END Button =====
                 Button(
                     onClick = {
                         showHistoryDialog = true
@@ -544,19 +525,19 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                     ) {
                                         Text(
                                             "$endNum.  ",
-                                            color = Color(0xFF1E90FF), // Blue
+                                            color = Color(0xFF1E90FF),
                                             fontSize = 24.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         Text(
                                             upScore.toString(),
-                                            color = Color(0xFFD3D3D3), // White-ish
+                                            color = Color(0xFFD3D3D3),
                                             fontSize = 24.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         Text(
                                             downScore.toString(),
-                                            color = Color(0xFFFFFF00), // Yellow
+                                            color = Color(0xFFFFFF00),
                                             fontSize = 24.sp,
                                             modifier = Modifier.weight(1f)
                                         )
