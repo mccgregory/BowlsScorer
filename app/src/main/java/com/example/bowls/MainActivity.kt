@@ -59,7 +59,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Greg edit App Start screen below
 @Composable
 fun OnboardingScreen(
     gameSinglesClicked: () -> Unit,
@@ -127,7 +126,6 @@ fun OnboardingScreen(
         }
     }
 }
-// Greg edit the App Start Screen above
 
 @Composable
 fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Modifier) {
@@ -150,14 +148,18 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var meClick by rememberSaveable { mutableStateOf(false) }
     var themClick by rememberSaveable { mutableStateOf(false) }
     var maxClick by rememberSaveable { mutableStateOf(0) }
+    var maxScorePerSide by rememberSaveable { mutableStateOf(0) }
     var bowls by rememberSaveable { mutableStateOf(0) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
+    var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
     var tempMeClick by remember { mutableStateOf(false) }
     var tempThemClick by remember { mutableStateOf(false) }
     var tempBowls by remember { mutableStateOf(0) }
+    var currentUpScore by remember { mutableStateOf(0) }
+    var currentDownScore by remember { mutableStateOf(0) }
 
     val endHistory = rememberSaveable(
         saver = Saver(
@@ -166,40 +168,102 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         )
     ) { mutableStateListOf<Triple<Int, Int, Int>>() }
 
-    if (gameSingles) { maxClick = 2 + 1 } else { maxClick = 4 + 1 }
-    LaunchedEffect(myScore, theirScore) { if (myScore >= 21 || theirScore >= 21) gameOver = true }
+    if (gameSingles) {
+        maxClick = 4 // 2 bowls per player, 2 players
+        maxScorePerSide = 2 // Max score per side per end
+    } else {
+        maxClick = 8 // 2 bowls per player, 4 players
+        maxScorePerSide = 4 // Max score per side per end
+    }
 
-    fun resetGame() { myScore = 0; theirScore = 0; strtMyScore = 0; strtTheirScore = 0; endCount = 1; meClick = false; themClick = false; bowls = 0; gameOver = false; endHistory.clear() }
-    fun completeEnd() { endHistory.add(Triple(endCount, myScore, theirScore)); endCount++; meClick = false; themClick = false; bowls = 0; strtMyScore = myScore; strtTheirScore = theirScore; view.playSoundEffect(SoundEffectConstants.CLICK) }
+    // Re-enable game-over logic at 21
+    LaunchedEffect(myScore, theirScore) {
+        if (myScore >= 21 || theirScore >= 21) {
+            gameOver = true
+            println("Game Over: myScore=$myScore, theirScore=$theirScore")
+        }
+    }
+
+    fun resetGame() {
+        myScore = 0
+        theirScore = 0
+        strtMyScore = 0
+        strtTheirScore = 0
+        endCount = 1
+        meClick = false
+        themClick = false
+        bowls = 0
+        gameOver = false
+        isScoringCurrentEnd = false
+        endHistory.clear()
+        currentUpScore = 0
+        currentDownScore = 0
+    }
+
+    fun resetCurrentEnd() {
+        meClick = false
+        themClick = false
+        bowls = 0
+        currentUpScore = 0
+        currentDownScore = 0
+        isScoringCurrentEnd = false
+        println("Reset current end: meClick=$meClick, themClick=$themClick, bowls=$bowls, currentUpScore=$currentUpScore, currentDownScore=$currentDownScore, isScoringCurrentEnd=$isScoringCurrentEnd")
+    }
+
+    fun completeEnd() {
+        println("Completing end $endCount: currentUpScore=$currentUpScore, currentDownScore=$currentDownScore")
+        val upScore = currentUpScore
+        val downScore = currentDownScore
+        endHistory.add(Triple(endCount, upScore, downScore))
+        endCount++
+        resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
+        myScore = endHistory.sumOf { it.second }
+        theirScore = endHistory.sumOf { it.third }
+        strtMyScore = myScore
+        strtTheirScore = theirScore
+        println("After completeEnd: myScore=$myScore, theirScore=$theirScore, endHistory=${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
+        view.playSoundEffect(SoundEffectConstants.CLICK)
+    }
+
     fun completeEditEnd() {
         val index = endHistory.indexOfFirst { it.first == editingEnd }
         if (index != -1) {
-            val oldUpScore = endHistory[index].second
-            val oldDownScore = endHistory[index].third
-            val upDiff = tempMyScore - oldUpScore
-            val downDiff = tempTheirScore - oldDownScore
             endHistory[index] = Triple(editingEnd!!, tempMyScore, tempTheirScore)
-            for (i in index + 1 until endHistory.size) {
-                endHistory[i] = Triple(endHistory[i].first, endHistory[i].second + upDiff, endHistory[i].third + downDiff)
-            }
-            myScore += upDiff
-            theirScore += downDiff
+            myScore = endHistory.sumOf { it.second }
+            theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
             strtTheirScore = theirScore
             Toast.makeText(mContext, "End $editingEnd updated to $tempMyScore-$tempTheirScore", Toast.LENGTH_SHORT).show()
         }
         editingEnd = null
+        resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
+
     fun completeAddEnd() {
         if (addingEnd != null) {
-            val index = endHistory.indexOfFirst { it.first == addingEnd }
-            if (index != -1) {
-                endHistory.removeAt(index) // Remove the old end
-            }
-            endHistory.add(Triple(addingEnd!!, tempAddUpScore, tempAddDownScore))
+            println("Before adding End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
+            // Create a new list to build the updated history
+            val updatedHistory = mutableListOf<Triple<Int, Int, Int>>()
+            val newEnd = Triple(addingEnd!!, tempAddUpScore, tempAddDownScore)
+
+            // Add all ends before the new end
+            endHistory.filter { it.first < addingEnd!! }.forEach { updatedHistory.add(it) }
+            // Add the new end
+            updatedHistory.add(newEnd)
+            // Add all ends after the new end, shifting their numbers up by 1
+            endHistory.filter { it.first >= addingEnd!! }.forEach { updatedHistory.add(Triple(it.first + 1, it.second, it.third)) }
+
+            // Replace the old history with the updated one
+            endHistory.clear()
+            endHistory.addAll(updatedHistory)
+            // Sort by end number (descending order should be handled in UI, not here)
             endHistory.sortBy { it.first }
-            myScore = endHistory.sumOf { it.second } // Recalculate totals
+            // Update endCount to reflect the new total number of ends
+            endCount = endHistory.size + 1 // +1 because endCount represents the current end being played
+            println("After adding and renumbering End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
+            // Recalculate totals
+            myScore = endHistory.sumOf { it.second }
             theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
             strtTheirScore = theirScore
@@ -210,9 +274,11 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             tempMeClick = false
             tempThemClick = false
             tempBowls = 0
+            resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
             view.playSoundEffect(SoundEffectConstants.CLICK)
         }
     }
+
     fun startEditing(endNum: Int) {
         val end = endHistory.firstOrNull { it.first == endNum }
         if (end != null) {
@@ -224,6 +290,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             editingEnd = endNum
         }
     }
+
     fun startAdding(endNum: Int) {
         tempAddUpScore = 0
         tempAddDownScore = 0
@@ -232,6 +299,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         tempBowls = 0
         addingEnd = endNum
     }
+
     fun replaceEnd(endNum: Int) {
         editingEnd = null
         startAdding(endNum)
@@ -261,20 +329,20 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.Start) {
-                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = (10).dp), color = Color.White, fontSize = 25.sp)
+                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 10.dp), color = Color.White, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = (0).dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick) tempMyScore++ } }, onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
+                            .offset(x = 2.dp, y = 0.dp)
+                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick && tempMyScore < maxScorePerSide) tempMyScore++ } }, onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempMyScore", color = Color.White, fontSize = 50.sp) }
                         }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.End) {
-                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = (10).dp), color = Color.Yellow, fontSize = 25.sp)
+                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = 10.dp), color = Color.Yellow, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 4.dp, end = 8.dp)
-                            .offset(x = (-10).dp, y = (0).dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick) tempTheirScore++ } }, onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
+                            .offset(x = (-10).dp, y = 0.dp)
+                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick && tempTheirScore < maxScorePerSide) tempTheirScore++ } }, onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempTheirScore", color = Color.Yellow, fontSize = 50.sp) }
                         }
                     }
@@ -282,7 +350,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 val originalEnd = endHistory.firstOrNull { it.first == editingEnd }
                 val hasChanges = originalEnd != null && (tempMyScore != originalEnd.second || tempTheirScore != originalEnd.third)
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).offset(y = (-10).dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -292,6 +360,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                 completeEditEnd()
                             } else {
                                 editingEnd = null
+                                resetCurrentEnd()
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
@@ -300,14 +369,14 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(
                         onClick = { replaceEnd(editingEnd!!) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp).offset(y = (-10).dp)  // ===Greg edit to move Button up 10dp
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
                     ) { Text("ADD", fontSize = 14.sp) }
                 }
                 Text(
                     "Editing End $editingEnd",
                     color = Color.White,
                     fontSize = 20.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp).offset(y = (-4).dp)
                 )
             }
         } else if (addingEnd != null) {
@@ -321,22 +390,22 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.Start) {
-                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = (10).dp), color = Color.White, fontSize = 25.sp)
+                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 10.dp), color = Color.White, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = (0).dp)
+                            .offset(x = 2.dp, y = 0.dp)
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onTap = {
                                         if (!tempThemClick && !tempMeClick || tempMeClick) {
-                                            tempMeClick = true;
-                                            tempBowls++;
-                                            if (tempBowls < maxClick) tempAddUpScore++
+                                            tempMeClick = true
+                                            tempBowls++
+                                            if (tempBowls < maxClick && tempAddUpScore < maxScorePerSide) tempAddUpScore++
                                         }
                                     },
                                     onLongPress = {
                                         if (tempAddUpScore > 0) {
-                                            tempAddUpScore--;
+                                            tempAddUpScore--
                                             tempBowls = maxOf(0, tempBowls - 1)
                                         }
                                     }
@@ -351,22 +420,22 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         }
                     }
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.End) {
-                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = (10).dp), color = Color.Yellow, fontSize = 25.sp)
+                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = 10.dp), color = Color.Yellow, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 4.dp, end = 8.dp)
-                            .offset(x = (-10).dp, y = (0).dp)
+                            .offset(x = (-10).dp, y = 0.dp)
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onTap = {
                                         if (!tempThemClick && !tempMeClick || tempThemClick) {
-                                            tempThemClick = true;
-                                            tempBowls++;
-                                            if (tempBowls < maxClick) tempAddDownScore++
+                                            tempThemClick = true
+                                            tempBowls++
+                                            if (tempBowls < maxClick && tempAddDownScore < maxScorePerSide) tempAddDownScore++
                                         }
                                     },
                                     onLongPress = {
                                         if (tempAddDownScore > 0) {
-                                            tempAddDownScore--;
+                                            tempAddDownScore--
                                             tempBowls = maxOf(0, tempBowls - 1)
                                         }
                                     }
@@ -400,6 +469,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                 completeAddEnd()
                             } else {
                                 addingEnd = null
+                                resetCurrentEnd()
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
@@ -408,13 +478,99 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.Start) {
-                Text("Up", modifier = Modifier.padding(8.dp).offset(x = 35.dp, y = (-25).dp), color = Color.White, fontSize = 25.sp)
-                Surface(modifier = Modifier.padding(8.dp).offset(x = 2.dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || meClick)) { meClick = true; bowls++; if (bowls < maxClick) myScore++ } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$myScore", color = Color.White, fontSize = 60.sp) } }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.End) {
-                Text("Down", modifier = Modifier.padding(8.dp).offset(x = (-35).dp, y = (-25).dp), color = Color.Yellow, fontSize = 25.sp)
-                Surface(modifier = Modifier.padding(8.dp).offset(x = (-10).dp, y = (-50).dp).pointerInput(Unit) { detectTapGestures(onTap = { if (!gameOver && (!themClick && !meClick || themClick)) { themClick = true; bowls++; if (bowls < maxClick) theirScore++ } }) }, color = Color.Black, shape = RoundedCornerShape(8.dp)) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text("$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
+            // Main scoring screen
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 0.dp), color = Color.White, fontSize = 25.sp)
+                    Surface(
+                        modifier = Modifier
+                            .padding(start = 8.dp, end = 4.dp)
+                            .offset(x = 2.dp, y = 0.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = {
+                                        println("Pre-Tap Up: meClick=$meClick, themClick=$themClick, bowls=$bowls, addingEnd=$addingEnd, currentUpScore=$currentUpScore, tempAddUpScore=$tempAddUpScore")
+                                        if (!gameOver && addingEnd == null && (!themClick && !meClick || meClick)) {
+                                            isScoringCurrentEnd = true
+                                            meClick = true
+                                            bowls++
+                                            if (bowls <= maxClick && currentUpScore < maxScorePerSide) currentUpScore++
+                                        }
+                                        println("Post-Tap Up: meClick=$meClick, themClick=$themClick, bowls=$bowls, addingEnd=$addingEnd, currentUpScore=$currentUpScore, tempAddUpScore=$tempAddUpScore, isScoringCurrentEnd=$isScoringCurrentEnd")
+                                    },
+                                    onLongPress = {
+                                        if (currentUpScore > 0) {
+                                            currentUpScore--
+                                            bowls = maxOf(0, bowls - 1)
+                                            meClick = bowls > 0
+                                            if (bowls == 0) isScoringCurrentEnd = false
+                                        }
+                                        println("Post-LongPress Up: meClick=$meClick, themClick=$themClick, bowls=$bowls, currentUpScore=$currentUpScore, isScoringCurrentEnd=$isScoringCurrentEnd")
+                                    }
+                                )
+                            },
+                        color = Color.Black,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                if (isScoringCurrentEnd) "$currentUpScore" else "$myScore",
+                                color = Color.White,
+                                fontSize = 60.sp
+                            )
+                        }
+                    }
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = 0.dp), color = Color.Yellow, fontSize = 25.sp)
+                    Surface(
+                        modifier = Modifier
+                            .padding(start = 4.dp, end = 8.dp)
+                            .offset(x = (-10).dp, y = 0.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = {
+                                        println("Pre-Tap Down: meClick=$meClick, themClick=$themClick, bowls=$bowls, addingEnd=$addingEnd, currentDownScore=$currentDownScore, tempAddDownScore=$tempAddDownScore")
+                                        if (!gameOver && addingEnd == null && (!themClick && !meClick || themClick)) {
+                                            isScoringCurrentEnd = true
+                                            themClick = true
+                                            bowls++
+                                            if (bowls <= maxClick && currentDownScore < maxScorePerSide) currentDownScore++
+                                        }
+                                        println("Post-Tap Down: meClick=$meClick, themClick=$themClick, bowls=$bowls, addingEnd=$addingEnd, currentDownScore=$currentDownScore, tempAddDownScore=$tempAddDownScore, isScoringCurrentEnd=$isScoringCurrentEnd")
+                                    },
+                                    onLongPress = {
+                                        if (currentDownScore > 0) {
+                                            currentDownScore--
+                                            bowls = maxOf(0, bowls - 1)
+                                            themClick = bowls > 0
+                                            if (bowls == 0) isScoringCurrentEnd = false
+                                        }
+                                        println("Post-LongPress Down: meClick=$meClick, themClick=$themClick, bowls=$bowls, currentDownScore=$currentDownScore, isScoringCurrentEnd=$isScoringCurrentEnd")
+                                    }
+                                )
+                            },
+                        color = Color.Black,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore",
+                                color = Color.Yellow,
+                                fontSize = 60.sp
+                            )
+                        }
+                    }
+                }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
@@ -422,7 +578,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(
-                        onClick = { meClick = false; themClick = false; bowls = 0; myScore = strtMyScore; theirScore = strtTheirScore },
+                        onClick = { resetCurrentEnd() },
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
@@ -567,4 +723,4 @@ fun ScorerPreview() { Scorer(gameSingles = true, onNewGame = {}) }
 
 private fun mToast(context: Context) { Toast.makeText(context, "This is a DEAD END", Toast.LENGTH_LONG).show() }
 
-private fun Context.finish() { (this as? ComponentActivity)?.finish(); android.os.Process.killProcess(android.os.Process.myPid()) }
+private fun Context.finish() { (this as? ComponentActivity)?.finish() }
