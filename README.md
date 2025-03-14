@@ -1,23 +1,33 @@
 # BowlsScorer
 Crown Green Bowls scorer app for Galaxy Watch 5
 
-Here is an explanation of the current code:
-The App starts with a menu offering Singles or Doubles i.e. Each player has 2 bowls each, this is to limit the maximum score each end.
-So, with Singles a person can have 2 bowls nearer to the jack than another (therefore maximum score is 2). With Doubles the maximum can be 4 bowls.
+Here is an explanation:
+The  'Crown Green Bowls' Game:
+So, with Singles a person can have 2 bowls nearer to the jack than another (therefore maximum score is 2). With Doubles the maximum score can be 4 bowls.
 Each End is won by one side or the other.
-It is recorded as UP if you score i.e. you are up, or DOWN if yor competitor wins i.e. you are down.
-So for Singles each end score can be: 1-0, 2-0, 0-0, 0-1,0-2.
-Doubles each end score can be: 1-0,2-0,3-0,4-0,0-0,0-1,0-2,0-3,0-4.
+The game is started by the AWAY player rolling out a jack (usually smaller bowl with distinctive colour - often yellow)
+THe AWAY then rolls out one Bowl (or 'wood').
+The HOME player now bowls ot one wood. The AWAY player rolls his last wood, then folowed by the HOME player.
+The players then score the END.
+It is recorded as UP if you score i.e. you are up, or DOWN if yor competitor wins i.e. you are down this communicated to the Scorers (One HOMe one AWAY) for them to record.
+So, for Singles each end score can be: 1-0, 2-0, 0-0, 0-1,0-2.
+Doubles, each end score can be: 1-0,2-0,3-0,4-0,0-0,0-1,0-2,0-3,0-4.
 The 0-0 ends are called a 'dead end', caused by someone knocking the jack off the green, or by it being impossible to decide which side were nearer to the jack.
+
+
+The' Crown Green Bowls' App
 The logic in the App is mainly to reduce the possibility of getting the score wrong.
 So, for example,  if you start scoring on one side (Up say for your score) you can't then add anything to the other (Down - score for your competitor) or vice-versa.
+The App starts with a menu offering Singles or Doubles i.e. Each player has 2 bowls per END, this is to limit the maximum score each END.
 There is a Red cross 'X' on the bottom LHS of screen for resetting the latest score in case of you starting to score incorrectly.
-There is a Green button with an "END" label next to it which causes the score to be recorded and display the END count, so starts from 1 (i.e. end 1 is being played).
+There is a Green button with an "END" label next to it which causes the score to be recorded and displays the END count, so starts from 1 (i.e. end 1 is being played).
+It is important to note that the END score reflects the END currently being played
 If The green button is clicked without any scores being added it records a dead-end and increments the end count, checks whether that was an inentional click, and pops up a toast showing "This is a Dead END". 
 The actual scoring on the Scoring Screen, UP or Down is achieved by clicking the large Score digits.
 The Winning score is 21, when a screen shows the winner and offers the options to play again or end the scoring by Exiting the App.
 
 A proper exit of the program can be made with a 'long-press' of the screen for 3 seconds - this is available most places in the running App - so this will close the App and tidy up.
+
 END Editing:  There is a blue unmarked button at the very bottom of the Watch screen which accesses the game History - i.e. you can view the past ENDs. If you click the blue button on the LHS of each END, you can select that END for edtting. The editing can be to correct the END score, or to completely replace that END with a forgotten, or missed END - thus correcting ALL the END numbers and the Final score.
 
 **NOTES ON DEVELOPMENT.**
