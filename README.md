@@ -27,7 +27,7 @@ VM: OpenJDK 64-Bit Server VM by JetBrains s.r.o.
 Toolkit: sun.awt.windows.WToolkit
 
 **Android studio is running on a Windows 10 x64 PC**
-Java is JDK-17 set in the File>Project Structure>Modules under Source Compatability and Target Compatability boxes 
+Java is JDK-17 set in the File>Project Structure>Modules under 'Source Compatability' and 'Target Compatability' boxes 
 
 FOR COLLABORATING.
 ==================
