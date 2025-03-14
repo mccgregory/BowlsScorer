@@ -1,8 +1,10 @@
 package com.example.bowls
 
+import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
 import android.view.SoundEffectConstants
+import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,13 +31,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private lateinit var notificationManager: NotificationManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Enable Do-Not-Disturb
+        enableDoNotDisturb()
+
+        // Set aggressive immersive mode
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                )
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
         setContent {
             Surface(modifier = Modifier.fillMaxSize()) {
                 var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
@@ -55,6 +77,47 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        disableDoNotDisturb()
+        // Restore system UI on exit
+        window.decorView.systemUiVisibility = 0
+    }
+
+    override fun onBackPressed() {
+        // Prevent back gesture
+    }
+
+    // Wear OS-specific dismissal override
+    override fun onUserLeaveHint() {
+        // Prevent right-swipe dismissal
+        println("User attempted to leave app via gesture—blocked")
+    }
+
+    private fun enableDoNotDisturb() {
+        try {
+            if (notificationManager.isNotificationPolicyAccessGranted) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                println("Do-Not-Disturb enabled")
+            } else {
+                println("DND permission not granted; skipping (Wear OS limitation)")
+            }
+        } catch (e: Exception) {
+            println("Failed to enable DND: ${e.message}")
+        }
+    }
+
+    private fun disableDoNotDisturb() {
+        try {
+            if (notificationManager.isNotificationPolicyAccessGranted) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                println("Do-Not-Disturb disabled")
+            }
+        } catch (e: Exception) {
+            println("Failed to disable DND: ${e.message}")
         }
     }
 }
@@ -176,7 +239,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         maxScorePerSide = 4 // Max score per side per end
     }
 
-    // Re-enable game-over logic at 21
     LaunchedEffect(myScore, theirScore) {
         if (myScore >= 21 || theirScore >= 21) {
             gameOver = true
@@ -216,7 +278,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         val downScore = currentDownScore
         endHistory.add(Triple(endCount, upScore, downScore))
         endCount++
-        resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
+        resetCurrentEnd()
         myScore = endHistory.sumOf { it.second }
         theirScore = endHistory.sumOf { it.third }
         strtMyScore = myScore
@@ -236,33 +298,23 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             Toast.makeText(mContext, "End $editingEnd updated to $tempMyScore-$tempTheirScore", Toast.LENGTH_SHORT).show()
         }
         editingEnd = null
-        resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
+        resetCurrentEnd()
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
     fun completeAddEnd() {
         if (addingEnd != null) {
             println("Before adding End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
-            // Create a new list to build the updated history
             val updatedHistory = mutableListOf<Triple<Int, Int, Int>>()
             val newEnd = Triple(addingEnd!!, tempAddUpScore, tempAddDownScore)
-
-            // Add all ends before the new end
             endHistory.filter { it.first < addingEnd!! }.forEach { updatedHistory.add(it) }
-            // Add the new end
             updatedHistory.add(newEnd)
-            // Add all ends after the new end, shifting their numbers up by 1
             endHistory.filter { it.first >= addingEnd!! }.forEach { updatedHistory.add(Triple(it.first + 1, it.second, it.third)) }
-
-            // Replace the old history with the updated one
             endHistory.clear()
             endHistory.addAll(updatedHistory)
-            // Sort by end number (descending order should be handled in UI, not here)
             endHistory.sortBy { it.first }
-            // Update endCount to reflect the new total number of ends
-            endCount = endHistory.size + 1 // +1 because endCount represents the current end being played
+            endCount = endHistory.size + 1
             println("After adding and renumbering End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
-            // Recalculate totals
             myScore = endHistory.sumOf { it.second }
             theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
@@ -274,7 +326,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             tempMeClick = false
             tempThemClick = false
             tempBowls = 0
-            resetCurrentEnd() // Reset scoring state, including isScoringCurrentEnd
+            resetCurrentEnd()
             view.playSoundEffect(SoundEffectConstants.CLICK)
         }
     }
@@ -376,7 +428,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     "Editing End $editingEnd",
                     color = Color.White,
                     fontSize = 20.sp,
-                    modifier = Modifier.padding(bottom = 8.dp).offset(y = (-4).dp)
+                    modifier = Modifier.padding(top = 8.dp).offset(y = (-4).dp)
                 )
             }
         } else if (addingEnd != null) {
@@ -478,7 +530,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
             }
         } else {
-            // Main scoring screen
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -656,7 +707,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             "End History",
                             color = Color(0xFFD3D3D3),
                             fontSize = 24.sp,
-                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp)
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
                         )
                         if (endHistory.isEmpty()) {
                             Text(
