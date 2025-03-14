@@ -33,4 +33,10 @@ FOR COLLABORATING.
 ==================
 The repository URL:
 https://github.com/mccgregory/BowlsScorer
+
+FINAL THINGS I SHOULD ADD
+1. Security: Need to disable swipe-to-the-Right App closure - Too easy to do. Embarassing while I struggle, and often fail, to recover the game score.
+2. Also need to remove distracting pop-ups. The 1st time I used the App in a league game the watch kept telling me the BT was disconnected and as I moved back closer to the phone it would tell me it was connected to the phone again! So I need to enable a DO-NOT-DISTURB setup which may also toggle WiFi and BT off when the App is started and back on (if they were on) after the App is closed.
+3. Creation of a File record probably with a unique time/date filename.
+4. Perhaps eventually, a FileHandling App for the Watch to Access, read, correct and print files. Or toclear them out!   
  
