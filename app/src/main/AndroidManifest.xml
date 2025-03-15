@@ -3,13 +3,14 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
-    <!-- Permissions for immersive mode, DND, and connectivity control -->
+    <!-- Permissions for immersive mode, DND, connectivity control, and Airplane Mode -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" /> <!-- Added for Airplane Mode -->
 
     <application
         android:allowBackup="true"
