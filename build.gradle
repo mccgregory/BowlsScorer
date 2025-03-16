@@ -9,6 +9,11 @@ buildscript {
     }
 }
 
+ext {
+    sourceCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility1 = sourceCompatibility
+}
+
 allprojects {
     repositories {
         // No google() or mavenCentral() here (defined in settings.gradle)

@@ -22,7 +22,7 @@ class SplashActivity : ComponentActivity() {
 
         // Use modern WindowInsetsController to hide system UI
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        // Removed: window.statusBarColor = android.graphics.Color.TRANSPARENT (deprecated and redundant)
         WindowCompat.getInsetsController(window, window.decorView).let { controller ->
             controller.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
             controller.hide(androidx.core.view.WindowInsetsCompat.Type.navigationBars())

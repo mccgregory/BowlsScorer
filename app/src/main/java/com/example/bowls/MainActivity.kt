@@ -48,12 +48,7 @@ class MainActivity : ComponentActivity() {
         // Enable Do-Not-Disturb
         enableDoNotDisturb()
 
-        // Set aggressive immersive mode
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        or View.SYSTEM_UI_FLAG_FULLSCREEN
-                )
+        // Set immersive mode with WindowInsetsControllerCompat
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
@@ -79,24 +74,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
+    } // Removed extra brace here—class continues below
 
     override fun onDestroy() {
         super.onDestroy()
         disableDoNotDisturb()
-        // Restore system UI on exit
-        window.decorView.systemUiVisibility = 0
-    }
-
-    override fun onBackPressed() {
-        // Prevent back gesture
     }
 
     // Wear OS-specific dismissal override
     override fun onUserLeaveHint() {
         // Prevent right-swipe dismissal
         println("User attempted to leave app via gesture—blocked")
+        super.onUserLeaveHint()
     }
+
+
 
     private fun enableDoNotDisturb() {
         try {
@@ -121,8 +113,8 @@ class MainActivity : ComponentActivity() {
             println("Failed to disable DND: ${e.message}")
         }
     }
-}
-
+} // Class ends here—only one closing brace
+// DELETE TO HERE
 @Composable
 fun OnboardingScreen(
     gameSinglesClicked: () -> Unit,
