@@ -12,5 +12,5 @@
     </style>
     <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
-    </style>
-</resources>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
+    </style></resources>
