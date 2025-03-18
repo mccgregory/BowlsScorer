@@ -1,5 +1,4 @@
 # BowlsScorer
-**BowlsScorer**
 
 **The 'Crown Green Bowls' Game:**
 When you play 'Singles', it is 2 players, one against the other and each with 2 bowls (or 'woods').
