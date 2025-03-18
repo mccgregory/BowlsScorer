@@ -3,14 +3,21 @@
 **The 'Crown Green Bowls' Game:**
 When you play 'Singles', it is 2 players, one against the other and each with 2 bowls (or 'woods').
 The aim is to get your woods closer  to the jack than your opponent (therefore the maximum score possible is 2).
+
 With 'Doubles' the maximum score is 4 each END as there are 2 players each side (2x2=4).
 Each End is won by one side or the other.
+
 It is recorded as UP if YOU score i.e. you are up, or DOWN if your competitor win the END i.e. you are down
 This is communicated to the 2  Scorers (HOME & AWAY) for them to record each END.
+
 With Singles each end score can be: 1-0, 2-0, 0-0, 0-1, 0-2.
+
 Doubles, each end score can be: 1-0, 2-0, 3-0, 4-0, 0-0, 0-1, 0-2, 0-3, 0-4.
+
 The 0-0 ENDs are called a 'dead end', caused by someone knocking the jack off the green, or by it being impossible to decide which side were nearer to the jack.
-The game is started by the AWAY player rolling out a jack (usually a smaller bowl with distinctive colour - often yellow) The AWAY player then rolls out one wood. The HOME player now bowls out their 1st wood. The AWAY player rolls his last wood, followed by the HOME player rolling their last wood. The players then score the END.
+
+The game is started by the AWAY player rolling out a jack (usually a smaller bowl with distinctive colour - often yellow) The AWAY player then rolls out one wood.
+The HOME player now bowls out their 1st wood. The AWAY player rolls his last wood, followed by the HOME player rolling their last wood. The players then score the END.
 
 **The 'Crown Green Bowls' App**
 The logic in the App is mainly to reduce the possibility of getting the score wrong. So, for example, if you start scoring on one side (Up say for your score) you can't then add anything to the other (Down - score for your competitor) or vice-versa.
