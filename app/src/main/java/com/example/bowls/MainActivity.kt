@@ -37,6 +37,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
+import android.util.Log // Add this at the top if missing
 
 class MainActivity : ComponentActivity() {
     private lateinit var notificationManager: NotificationManager
@@ -46,7 +47,7 @@ class MainActivity : ComponentActivity() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Enable Do-Not-Disturb
-        enableDoNotDisturb()
+    // Grok told me!    enableDoNotDisturb()
 
         // Set immersive mode with WindowInsetsControllerCompat
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -188,6 +189,8 @@ fun OnboardingScreen(
 @Composable
 fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Modifier) {
     val mContext = LocalContext.current
+    Log.d("BowlsScorer", "Scorer started") // Add this
+    Log.d("BowlsScorer", "Scorer started - LOGCAT TEST") // Add this
     val view = LocalView.current
     var showExitDialog by remember { mutableStateOf(false) }
     var showDeadEndDialog by remember { mutableStateOf(false) }
@@ -197,7 +200,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var tempAddUpScore by remember { mutableStateOf(0) }
     var tempAddDownScore by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
-
+    var swipeEnabled by remember { mutableStateOf(true) } //ADDED 15:37
+    var lastSwipeTime by remember { mutableStateOf(0L) } // Add this line
     var myScore by rememberSaveable { mutableStateOf(0) }
     var theirScore by rememberSaveable { mutableStateOf(0) }
     var strtMyScore by rememberSaveable { mutableStateOf(0) }
@@ -355,18 +359,31 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
 //    detectHorizontalDragGestures
 //**New Code to Insert**:
 //    ```kotlin
+// Greg Start
     Surface(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { change, dragAmount ->
-                    if (dragAmount > 0) {
-                        println("Swipe-right detected, showing exit dialog")
-                        coroutineScope.launch { showExitDialog = true }
+                    val currentTime = System.currentTimeMillis()
+                    Log.d("BowlsScorer", "Swipe attempt: dragAmount=$dragAmount, swipeEnabled=$swipeEnabled, timeSinceLast=${currentTime - lastSwipeTime}")
+                    if (dragAmount > 0 && swipeEnabled && (currentTime - lastSwipeTime > 500)) {
+                        Log.d("BowlsScorer", "Swipe-right accepted, showing dialog")
+                        coroutineScope.launch {
+                            swipeEnabled = false
+                            showExitDialog = true
+                            Log.d("BowlsScorer", "Dialog triggered, swipeEnabled=$swipeEnabled")
+                        }
+                        lastSwipeTime = currentTime
                         change.consume()
+                    } else {
+                        Log.d("BowlsScorer", "Swipe-right rejected")
+                        Log.d("BowlsScorer", "Reason: drag=$dragAmount, enabled=$swipeEnabled, time=${currentTime - lastSwipeTime}")
                     }
                 }
             }
+
+// Greg END
             .pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } }) },
         color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else Color.Black
     ) {
@@ -680,27 +697,40 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
             }
         }
-
+// next edit
         if (showExitDialog) {
             AlertDialog(
-                onDismissRequest = { showExitDialog = false },
+                onDismissRequest = {
+                    showExitDialog = false
+                    swipeEnabled = true // Ensure reset here
+                    Log.d("BowlsScorer", "Dismissed, swipeEnabled reset to true")
+                },
                 title = { Text("Exit App") },
                 text = { Text("Are you sure you want to exit?") },
-                confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Confirm") } },
-                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showExitDialog = false
+                            mContext.finish()
+                            Log.d("BowlsScorer", "Confirmed exit")
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)
+                    ) { Text("Confirm") }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            showExitDialog = false
+                            swipeEnabled = true // Ensure reset here
+                            Log.d("BowlsScorer", "Canceled, swipeEnabled reset to true")
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
+                    ) { Text("Cancel") }
+                },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
-        if (showDeadEndDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeadEndDialog = false },
-                title = { Text("Confirm Dead End") },
-                text = { Text("This is a dead end. Move to next end?") },
-                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Confirm") } },
-                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Cancel") } },
-                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
-            )
-        }
+// next edit end
         if (showHistoryDialog) {
             Dialog(
                 onDismissRequest = { showHistoryDialog = false },
