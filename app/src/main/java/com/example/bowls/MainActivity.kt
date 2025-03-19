@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.SoundEffectConstants
-import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,8 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.CoroutineScope
@@ -123,12 +120,6 @@ class MainActivity : ComponentActivity() {
             return true
         }
         return super.onKeyDown(keyCode, event)
-    }
-    @Deprecated("Use onBackPressedDispatcher instead if needed")
-    override fun onBackPressed() {
-        Log.d("BowlsScorer", "onBackPressed called")
-        Toast.makeText(this, "Back Blocked!", Toast.LENGTH_SHORT).show()
-        coroutineScope.launch { showExitDialog = true }
     }
 
     override fun onDestroy() {
