@@ -38,7 +38,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
-
+//Curved clock imports
+//import androidx.wear.compose.foundation.CurvedRow
+//import androidx.wear.compose.foundation.CurvedText
+//import java.time.LocalTime
+//import java.time.format.DateTimeFormatter
+//import kotlinx.coroutines.delay
+//Rectangular clock imports
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     private lateinit var notificationManager: NotificationManager
@@ -255,6 +266,27 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         maxClick = 8
         maxScorePerSide = 4
     }
+// Drop clock in here?
+//    var currentTime by remember { mutableStateOf(LocalTime.now()) }
+//    LaunchedEffect(Unit) {
+//        while (true) {
+//            currentTime = LocalTime.now()
+//            delay(1000)
+//        }
+//    }
+//    Column(
+//        modifier = Modifier.fillMaxWidth(),
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+//        CurvedRow {
+//            CurvedText(
+//                text = currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+//                color = Color.White,
+//                modifier = Modifier.background(Color.Black)
+//            )
+//        }
+//    }
+// Drop clock in here?
 
     LaunchedEffect(myScore, theirScore) {
         if (myScore >= 21 || theirScore >= 21) {
@@ -526,6 +558,24 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         ) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Text(text = "$endCount", fontSize = 26.sp, modifier = Modifier.offset(x = -15.dp, y = -4.dp)) } }
                     }
                 }
+//  NEW CLOCK
+        var currentTime by remember { mutableStateOf(LocalTime.now()) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                currentTime = LocalTime.now()
+                delay(1000)
+            }
+        }
+//       Spacer(modifier = Modifier.height(8.dp)) // Add this
+        Text(
+            text = currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+            color = Color.White,
+            modifier = Modifier
+                .background(Color.Black)
+                .padding(top = 0.dp, bottom = 0.dp), // More below
+            fontSize = 16.sp
+        )
+//NEW CLOCK
                 Button(
                     onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
