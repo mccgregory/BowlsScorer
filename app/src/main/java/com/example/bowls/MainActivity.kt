@@ -48,8 +48,6 @@ import androidx.activity.OnBackPressedCallback
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     private lateinit var notificationManager: NotificationManager
@@ -143,18 +141,6 @@ class MainActivity : ComponentActivity() {
         super.onUserLeaveHint()
     }
 
-    private fun enableDoNotDisturb() {
-        try {
-            if (notificationManager.isNotificationPolicyAccessGranted) {
-                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-                println("Do-Not-Disturb enabled")
-            } else {
-                println("DND permission not granted; skipping (Wear OS limitation)")
-            }
-        } catch (e: Exception) {
-            println("Failed to enable DND: ${e.message}")
-        }
-    }
 
     private fun disableDoNotDisturb() {
         try {
