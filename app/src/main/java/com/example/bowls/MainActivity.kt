@@ -45,9 +45,9 @@ import androidx.activity.OnBackPressedCallback
 //import java.time.format.DateTimeFormatter
 //import kotlinx.coroutines.delay
 //Rectangular clock imports
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.delay
+//import java.time.LocalTime
+//import java.time.format.DateTimeFormatter
+//import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private lateinit var notificationManager: NotificationManager
@@ -546,23 +546,23 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     }
                 }
 //  NEW CLOCK
-        var currentTime by remember { mutableStateOf(LocalTime.now()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                currentTime = LocalTime.now()
-                delay(1000)
-            }
-        }
+//        var currentTime by remember { mutableStateOf(LocalTime.now()) }
+//        LaunchedEffect(Unit) {
+//            while (true) {
+//                currentTime = LocalTime.now()
+//                delay(1000)
+//            }
+//        }
 //       Spacer(modifier = Modifier.height(8.dp)) // Add this
-                Text(
-                    text = "TEST",
-                    color = Color.White,
-                    modifier = Modifier
-                        .background(Color.Black)
-                        .padding(4.dp)
-                        .offset(x = 0.dp, y = 60.dp),
-                    fontSize = 16.sp
-                )
+//                Text(
+//                    text = "TEST",
+//                    color = Color.White,
+//                    modifier = Modifier
+//                        .background(Color.Black)
+//                        .padding(4.dp)
+//                        .offset(x = 0.dp, y = 60.dp),
+//                    fontSize = 16.sp
+//                )
 //NEW CLOCK
                 Button(
                     onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
