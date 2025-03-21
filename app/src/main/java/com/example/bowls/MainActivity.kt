@@ -395,8 +395,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     Surface(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { /* No exit dialog here anymore */ } }) },
-        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else Color.Black
+            .pointerInput(Unit) { detectTapGestures(/* ... */) },
+        color = if (isScoringCurrentEnd) Color(0xFF8B0000) else Color.Black // Dark red
     ) {
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -527,6 +527,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     ) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text(if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
                 }
             }
+// THIS COLUMN GREG?
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -553,14 +554,15 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
         }
 //       Spacer(modifier = Modifier.height(8.dp)) // Add this
-        Text(
-            text = currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-            color = Color.White,
-            modifier = Modifier
-                .background(Color.Black)
-                .padding(top = 0.dp, bottom = 0.dp), // More below
-            fontSize = 16.sp
-        )
+                Text(
+                    text = "TEST",
+                    color = Color.White,
+                    modifier = Modifier
+                        .background(Color.Black)
+                        .padding(4.dp)
+                        .offset(x = 0.dp, y = 60.dp),
+                    fontSize = 16.sp
+                )
 //NEW CLOCK
                 Button(
                     onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
