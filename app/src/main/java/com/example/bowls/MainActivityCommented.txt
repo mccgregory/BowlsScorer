@@ -514,32 +514,74 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     ) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text(if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
                 }
             }
-            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = { resetCurrentEnd() }, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
-                    }
-                    Row {
-                        Text(text = "END", color = Color.Green, fontSize = 25.sp, modifier = Modifier.padding(end = 8.dp, top = 4.dp).offset(x = 45.dp))
-                        Button(
-                            onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier.height(40.dp).width(80.dp).offset(x = 45.dp)
-                        ) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Text(text = "$endCount", fontSize = 26.sp, modifier = Modifier.offset(x = -15.dp, y = -4.dp)) } }
-                    }
-                }
-                Button(
-                    onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                    modifier = Modifier.size(40.dp).offset(y = 20.dp),
-                    shape = CircleShape
-                ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
-            }
-        }
+// OR this Column GREG
 
+ConstraintLayout(modifier = Modifier.fillMaxSize()) {
+    val (xEndRow, clock, historyButton) = createRefs()
+    // "X - END" Row
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .constrainAs(xEndRow) {
+                top.linkTo(parent.top)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            },
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) { /* ... */ }
+    // Clock
+    var currentTime by remember { mutableStateOf(LocalTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = LocalTime.now()
+            delay(1000)
+        }
+    }
+    Text(
+        text = "TEST", // Was currentTime.format(...)
+        color = Color.White,
+        modifier = Modifier
+            .background(Color.Black)
+            .padding(4.dp)
+            .offset(x = 0.dp, y = 60.dp),
+        fontSize = 16.sp
+    )
+//
+//    }
+//        // "X - END" Row
+//    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(horizontal = 16.dp, vertical = 8.dp)
+//            .align(Alignment.TopCenter),
+//        horizontalArrangement = Arrangement.SpaceBetween
+//    ) {
+//        IconButton(onClick = { resetCurrentEnd() }, modifier = Modifier.size(40.dp)) {
+//            Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
+//        }
+//        Row {
+//            Text(text = "END", color = Color.Green, fontSize = 25.sp, modifier = Modifier.padding(end = 8.dp, top = 4.dp).offset(x = 45.dp))
+//            Button(
+//                onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
+//                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
+//                modifier = Modifier.height(40.dp).width(80.dp).offset(x = 45.dp)
+//            ) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Text(text = "$endCount", fontSize = 26.sp, modifier = Modifier.offset(x = -15.dp, y = -4.dp)) } }
+//        }
+//    }
+
+    // History Button
+    Button(
+        onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+        modifier = Modifier
+            .size(40.dp)
+            .align(Alignment.BottomCenter)
+            .offset(y = (-20).dp),
+        shape = CircleShape
+    ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
+}
+// TO HERE GREG
         // Exit dialog for swipe-right or long press
         if (showExitDialog) {
             AlertDialog(

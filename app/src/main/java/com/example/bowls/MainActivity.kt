@@ -216,7 +216,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var addingEnd by remember { mutableStateOf<Int?>(null) }
     var tempAddUpScore by remember { mutableStateOf(0) }
     var tempAddDownScore by remember { mutableStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
+//    val coroutineScope = rememberCoroutineScope()
 
     var myScore by rememberSaveable { mutableStateOf(0) }
     var theirScore by rememberSaveable { mutableStateOf(0) }
@@ -396,7 +396,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures(/* ... */) },
-        color = if (isScoringCurrentEnd) Color(0xFF8B0000) else Color.Black // Dark red
+// colour change for switch to 'Edit END SCREEN'
+//        color = if (isScoringCurrentEnd) Color(0xFF8B0000) else Color.Black // Dark red
+        color = if (isScoringCurrentEnd) Color(0xFF00008B) else Color.Black // Dark blue
     ) {
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -462,29 +464,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.Start) {
-                        Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 10.dp), color = Color.White, fontSize = 25.sp)
-                        Surface(modifier = Modifier
-                            .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = 0.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick && tempAddUpScore < maxScorePerSide) tempAddUpScore++ } }, onLongPress = { if (tempAddUpScore > 0) { tempAddUpScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
-                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempAddUpScore", color = Color.White, fontSize = 50.sp) }
-                        }
-                    }
-                    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.End) {
-                        Text("Down", modifier = Modifier.padding(end = 8.dp, bottom = 4.dp).offset(x = (-35).dp, y = 10.dp), color = Color.Yellow, fontSize = 25.sp)
-                        Surface(modifier = Modifier
-                            .padding(start = 4.dp, end = 8.dp)
-                            .offset(x = (-10).dp, y = 0.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick && tempAddDownScore < maxScorePerSide) tempAddDownScore++ } }, onLongPress = { if (tempAddDownScore > 0) { tempAddDownScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
-                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempAddDownScore", color = Color.Yellow, fontSize = 50.sp) }
-                        }
-                    }
-                }
+// GREG Changing digits to blue?
+//
+//GREG Changing digits to blue?
                 Text("Adding End $addingEnd", color = Color.White, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
                 val hasChanges = tempAddUpScore > 0 || tempAddDownScore > 0
                 Row(
