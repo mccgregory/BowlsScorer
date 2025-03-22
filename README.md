@@ -26,7 +26,7 @@ The App starts with a menu offering Singles or Doubles i.e. Each player has 2 bo
 
 The actual scoring on the Scoring Screen, UP or Down is achieved by clicking the large Score digits. The Winning score is 21, when a screen shows the winner and offers the options to play again or end the scoring by Exiting the App.
 
-A proper exit of the program can be made with a swipe-right of the screen - it leads to screen asking to Confirm or Cancel the EXIT.
+The program can be ended with a swipe-right of the screen - it leads to screen asking to Confirm or Cancel the EXIT.
 
 END Editing: There is a blue unmarked button at the very bottom of the Watch screen which accesses the game History - i.e. you can view the past ENDs. If you click the blue button on the RHS of each END, you can select that END for editing. The editing can be to correct the END score, or to completely replace that END with a forgotten, or missed END - thus correcting ALL the END numbers and the Final score.
 
