@@ -26,7 +26,7 @@ The App starts with a menu offering Singles or Doubles i.e. Each player has 2 bo
 
 The actual scoring on the Scoring Screen, UP or Down is achieved by clicking the large Score digits. The Winning score is 21, when a screen shows the winner and offers the options to play again or end the scoring by Exiting the App.
 
-A proper exit of the program can be made with a 'long-press' of the screen for 3 seconds - this is available most places in the running App - so this will close the App and tidy up.
+A proper exit of the program can be made with a swipe-right of the screen - it leads to screen asking to Confirm or Cancel the EXIT.
 
 END Editing: There is a blue unmarked button at the very bottom of the Watch screen which accesses the game History - i.e. you can view the past ENDs. If you click the blue button on the RHS of each END, you can select that END for editing. The editing can be to correct the END score, or to completely replace that END with a forgotten, or missed END - thus correcting ALL the END numbers and the Final score.
 
@@ -34,14 +34,4 @@ END Editing: There is a blue unmarked button at the very bottom of the Watch scr
 
 Android studio is running on a Windows 10 x64 PC Java is JDK-17 set in the File>Project Structure>Modules under 'Source Compatibility' and 'Target Compatibility' boxes The target is a Samsung Watch 5, with Wear OS
 
-For anyone who has a compatible Smart Watch they can log into the GitHub repository here URL: https://github.com/mccgregory/BowlsScorer
-
-**FINAL THINGS I SHOULD ADD**
-a. tidy up the Editing Screen - aesthetics background colour. 
-b. Remove the screen swapping so the Min Scoring Screen is visible to adjust scores directly, not through an END Scoring Screen. 
-c. Checkout anomaly with disabling swipe-right Swipe-right UPDATE: I tested the code and swiped-right - it asked me to confirm or cancel. I cancelled, and carried on testing successfully.
-Then I cancelled again, this time it exited straightaway - no safety net! I ran the App again, right-swiped after entering some scores - EXITED IMMEDIATELY! Uggh!
-
-Creation of a File record probably with a unique time/date filename.
-Perhaps eventually, a File-Handling App for the Watch to Access, read, correct and print files. Or to clear them out!
- 
+For anyone who has a compatible Smart Watch they can log into the GitHub repository here URL: https://github.com/mccgregory/BowlsScorer.
