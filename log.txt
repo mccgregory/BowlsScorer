@@ -1,0 +1,48 @@
+4570e11 26th (at least)Commit of Bowls2 Crown Green Bowls Scorer 08:37, 21/03/2025. changed colour of 'Edit END Screen' to dark blue Before testing for Wifi & BT.
+c4790f1 Removed clock from Scorer, unsqueezed layout - BACK TO NORMAL! WooHoo!
+7b33221 Changed background to dark red for END scoring mode
+0fc8944 25th Commit of Bowls2 Crown Green Bowls Scorer 19:03, 19/03/2025. After testing for Wifi & BT. Added a simple clock
+b6faa7c 25th Commit of Bowls2 Crown Green Bowls Scorer 19:03, 19/03/2025. After testing for Wifi & BT. Added a simple clock
+96068de 24th Commit of Bowls2 Crown Green Bowls Scorer 18:18, 16/03/2025. App protected from "swipe-right" Closing the it down. WooHoo!
+a89a83a 24th Commit of Bowls2 Crown Green Bowls Scorer 18:18, 16/03/2025. App protected from "swipe-right" Closing the it down. WooHoo!
+39c02b1 Fixed swipe-right by ensuring swipeEnabled reset in dialog
+0d13cfc Archived commented MainActivity as MainActivityCommented.txt
+788e41b Fixed deprecated statusBarColor warning by moving to themes.xml
+e91a821 Updated build files and app code
+7dcad06 22nd Commit of Bowls2 Crown Green Bowls Scorer 18:18, 16/03/2025. Swipe-right checks you want to CLOSE the App. Tested and Works!! So App more secure!
+387e571 22nd Commit of Bowls2 Crown Green Bowls Scorer 18:18, 16/03/2025. Swipe-right checks you want to CLOSE the App. Tested and Works!! So App more secure!
+4a29cba 21st Commit of Bowls2 Crown Green Bowls Scorer 17:00, 15/03/2025. ALL testing OK. In the middle of adding security features like disabling swipe-right. Just got it working again and lost conversation
+d8c743c 20th Commit of Bowls2 Crown Green Bowls Scorer 17:22, 14/03/2025. ADDing a forgotten seems to be working OK. In the middle of adding security features like disabl swipe-right.
+57c3a1a 19th Commit of Bowls2 Crown Green Bowls Scorer 13:42, 14/03/2025. 1st of the day Correct the calculations when a new END is added... Still considering keeping the failure when it swaps the Scoring Screen for End Scoring Screen as a feature... Still scores testing. Will probably add security featues next.
+ee9977d Update README.md
+08b180c Update README.md
+19d380f Update README.md
+9ff4236 Update README.md
+93263ee Update README.md
+2a4dab6 Update README.md
+c6e9f7e 18th Commit of Bowls2 Crown Green Bowls Scorer 17:45, 13/03/2025. End of the day Incrementally closer - just need to correct the calculations when a new END is added...
+c1ad5db 17th Commit of Bowls2 Crown Green Bowls Scorer 17:45, 13/03/2025. End of the day Code getting very close...
+8d91385 16th Commit of Bowls2 Crown Green Bowls Scorer 11:46, 13/03/2025. End of the day Got working code from GROK forthe Edit END History, so that we can record any missed ENDs. The code looks quite close - must save what we hav, and investigate...
+2ed6b05 15th Commit of Bowls2 Crown Green Bowls Scorer 11:46, 13/03/2025. End of the day Prepared to add new logic for the Edit END History, so that we can record any missed ENDs.
+eb7d702 Update README.md
+c7971e6 Update README.md
+27c3ab7 13th Commit of Bowls2 Crown Green Bowls Scorer 19:24, 12/03/2025. End of the day In the middle of adjusting the END History Editing screen
+4538783 12th Commit of Bowls2 Crown Green Bowls Scorer 18:27, 12/03/2025. rearranged and modified App Start Screen, so it fits in rest of screens
+2722e25 11th Commit of Bowls2 Crown Green Bowls Scorer 17:57, 12/03/2025. Removed long-press feature from Scoring Screen this had been added when Grok added this to the History editing screen
+15e6d2f 10th Commit of Bowls2 Crown Green Bowls Scorer 12:54, 12/03/2025. I've adjusted the Up & DOWN labels and Scores
+45db290 9th Commit of Bowls2 Crown Green Bowls Scorer 12:15, 12/03/2025. I've adjusted the END label and Button
+748b613 8th Commit of Bowls2 Crown Green Bowls Scorer 10:41, 12/03/2025. Accepted double SplashScreen (feature!) Got my App Icon back! Just starting to make somechanges to the aesthetics... This commit is for GROK to re-sync.
+5243688 7th Commit of Bowls2 Crown Green Bowls Scorer 10:08, 12/03/2025. Accepted double SplashScreen (feature!) Got my App Icon back! Just starting to make somechanges to the aesthetics...
+15f9396 7th Commit of Bowls2 Crown Green Bowls Scorer 10:08, 12/03/2025. Accepted double SplashScreen (feature!) Got my App Icon back! Just starting to make somechanges to the aesthetics...
+f896bde 7th Commit of Bowls2 Crown Green Bowls Scorer 10:08, 12/03/2025. Accepted double SplashScreen (feature!) Got my App Icon back! Just starting to make somechanges to the aesthetics...
+d43ee5e 6th Commit of Bowls2 Crown Green Bowls Scorer 11:20, 11/03/2025. Progress on the splashscreen! Just need to get rid of the App icon...
+99f9e6b Create .gitimore
+d7067f7 Initial commit
+2cbbbf8 6th Commit of Bowls2 Crown Green Bowls Scorer 06:52, 11/03/2025. Progress on the splashscreen! Just need to get rid of the App icon...
+d17ce48 6th Commit of Bowls2 Crown Green Bowls Scorer 17:20, 10/03/2025. Grok is failing... This is just a last backup before new code...
+cb9eb38 5th Commit of Bowls2 Crown Green Bowls Scorer 11:29, 10/03/2025. Grok is on the case again
+fccc469 3rd Commit of Bowls2 Crown Green Bowls Scorer 11:34, 07/03/2025. The blue History button now works. ALL working just needs tweaking
+ab1d67a 2nd Commit of Bowls2 Crown Green Bowls Scorer 17:25, 06/03/2025. Added blue History button Added listing code needs adjusting
+1e56c1a 1st Commit of Bowls2 Crown Green Bowls Scorer 16:09, 06/03/2025
+b06b6c6 Initial commit: Working version of GrokBowlsScore with all features as of 06-Mar-2025
+27cbb74 Initial commit of working old app

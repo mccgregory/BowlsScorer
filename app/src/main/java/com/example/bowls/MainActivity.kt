@@ -1,7 +1,10 @@
 package com.example.bowls
 
+import kotlinx.coroutines.delay
 import android.app.NotificationManager
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.SoundEffectConstants
@@ -38,28 +41,39 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
-//Curved clock imports
-//import androidx.wear.compose.foundation.CurvedRow
-//import androidx.wear.compose.foundation.CurvedText
-//import java.time.LocalTime
-//import java.time.format.DateTimeFormatter
-//import kotlinx.coroutines.delay
-//Rectangular clock imports
-//import java.time.LocalTime
-//import java.time.format.DateTimeFormatter
-//import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private lateinit var notificationManager: NotificationManager
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private var showExitDialog by mutableStateOf(false)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        //notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        Log.d("BowlsScorer", "App launched - LOGCAT TEST")
-        Toast.makeText(this, "App Started!", Toast.LENGTH_SHORT).show()
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    // Bluetooth and Wi-Fi management
+    private lateinit var bluetoothAdapter: BluetoothAdapter
+    private lateinit var wifiManager: WifiManager
+    private var wasBluetoothEnabled: Boolean = false
+    private var wasWifiEnabled: Boolean = false
+//Start of EDIT
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    Log.d("BowlsScorer", "App launched - LOGCAT TEST")
+    Toast.makeText(this, "App Started!", Toast.LENGTH_SHORT).show()
+
+    bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: run {
+        Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show()
+        BluetoothAdapter.getDefaultAdapter() // Fallback, though null is fine here
+    }
+    wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
+    wasWifiEnabled = wifiManager.isWifiEnabled
+    disableConnectivity()
+
+    // Log every 5 seconds to check Wi-Fi state
+    coroutineScope.launch {
+        while (true) {
+            Log.d("BowlsScorer", "App still running - Wi-Fi check")
+            delay(5000) // Wait 5 seconds
+        }
+    }
+//END of EDIT
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 Log.d("BowlsScorer", "Back pressed - dispatcher")
@@ -67,14 +81,6 @@ class MainActivity : ComponentActivity() {
                 coroutineScope.launch { showExitDialog = true }
             }
         })
-
-        // Enable Do-Not-Disturb
-
-        // Set immersive mode with WindowInsetsControllerCompat
-//        WindowCompat.setDecorFitsSystemWindows(window, false)
-//        val controller = WindowInsetsControllerCompat(window, window.decorView)
-//        controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-//        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
         setContent {
             Surface(modifier = Modifier.fillMaxSize()) {
@@ -85,7 +91,10 @@ class MainActivity : ComponentActivity() {
                         text = { Text("Are you sure you want to exit?") },
                         confirmButton = {
                             Button(
-                                onClick = { finish() },
+                                onClick = {
+                                    restoreConnectivity() // Restore before exit
+                                    finish()
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)
                             ) { Text("Confirm") }
                         },
@@ -134,13 +143,13 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         disableDoNotDisturb()
+        restoreConnectivity() // Ensure restoration even if not via dialog
     }
 
     override fun onUserLeaveHint() {
         println("User attempted to leave app via gesture—blocked")
         super.onUserLeaveHint()
     }
-
 
     private fun disableDoNotDisturb() {
         try {
@@ -152,7 +161,31 @@ class MainActivity : ComponentActivity() {
             println("Failed to disable DND: ${e.message}")
         }
     }
+
+    private fun disableConnectivity() {
+        Toast.makeText(this, "Please disable Wi-Fi and Bluetooth in Settings for uninterrupted scoring", Toast.LENGTH_LONG).show()
+        Log.d("BowlsScorer", "User prompted to disable connectivity manually")
+    }
+    private fun restoreConnectivity() {
+        Toast.makeText(this, "Please restore Wi-Fi and Bluetooth in Settings if needed", Toast.LENGTH_LONG).show()
+        Log.d("BowlsScorer", "User prompted to restore connectivity manually")
+    }
+
 }
+
+// Rest of your code (OnboardingScreen, Scorer, etc.) remains unchanged
+//  GROK change END?
+
+//    private fun disableDoNotDisturb() {
+//        try {
+//            if (notificationManager.isNotificationPolicyAccessGranted) {
+//                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+//                println("Do-Not-Disturb disabled")
+//            }
+//        } catch (e: Exception) {
+//            println("Failed to disable DND: ${e.message}")
+//        }
+//    }
 
 @Composable
 fun OnboardingScreen(
