@@ -1,0 +1,25 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.8.0'  // This is fine (though 8.2.0 is more stable with SDK 34)
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'  // Updated to 1.9.24
+    }
+}
+
+ext {
+    sourceCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility1 = sourceCompatibility
+}
+
+allprojects {
+    repositories {
+        // No google() or mavenCentral() here (defined in settings.gradle)
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
