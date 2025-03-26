@@ -52,28 +52,28 @@ class MainActivity : ComponentActivity() {
     private lateinit var wifiManager: WifiManager
     private var wasBluetoothEnabled: Boolean = false
     private var wasWifiEnabled: Boolean = false
-//Start of EDIT
-override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    Log.d("BowlsScorer", "App launched - LOGCAT TEST")
-    Toast.makeText(this, "App Started!", Toast.LENGTH_SHORT).show()
 
-    bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: run {
-        Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show()
-        BluetoothAdapter.getDefaultAdapter() // Fallback, though null is fine here
-    }
-    wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
-    wasWifiEnabled = wifiManager.isWifiEnabled
-    disableConnectivity()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d("BowlsScorer", "App launched - LOGCAT TEST")
+        Toast.makeText(this, "App Started!", Toast.LENGTH_SHORT).show()
 
-    // Log every 5 seconds to check Wi-Fi state
-    coroutineScope.launch {
-        while (true) {
-            Log.d("BowlsScorer", "App still running - Wi-Fi check")
-            delay(5000) // Wait 5 seconds
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: run {
+            Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show()
+            BluetoothAdapter.getDefaultAdapter() // Fallback, though null is fine here
         }
-    }
-//END of EDIT
+        wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
+        wasWifiEnabled = wifiManager.isWifiEnabled
+        disableConnectivity()
+
+        // Log every 5 seconds to check Wi-Fi state
+        coroutineScope.launch {
+            while (true) {
+                Log.d("BowlsScorer", "App still running - Wi-Fi check")
+                delay(5000) // Wait 5 seconds
+            }
+        }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 Log.d("BowlsScorer", "Back pressed - dispatcher")
@@ -166,26 +166,131 @@ override fun onCreate(savedInstanceState: Bundle?) {
         Toast.makeText(this, "Please disable Wi-Fi and Bluetooth in Settings for uninterrupted scoring", Toast.LENGTH_LONG).show()
         Log.d("BowlsScorer", "User prompted to disable connectivity manually")
     }
+
     private fun restoreConnectivity() {
         Toast.makeText(this, "Please restore Wi-Fi and Bluetooth in Settings if needed", Toast.LENGTH_LONG).show()
         Log.d("BowlsScorer", "User prompted to restore connectivity manually")
     }
-
 }
 
-// Rest of your code (OnboardingScreen, Scorer, etc.) remains unchanged
-//  GROK change END?
+@Composable
+fun AddEndDialog(
+    endIndex: Int,
+    gameSingles: Boolean,
+    onConfirm: (Int, Int) -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var upScore by remember { mutableStateOf(0) }
+    var downScore by remember { mutableStateOf(0) }
+    var bowls by remember { mutableStateOf(0) }
+    var meClick by remember { mutableStateOf(false) }
+    var themClick by remember { mutableStateOf(false) }
+    val maxClick = if (gameSingles) 4 else 8
+    val maxScorePerSide = if (gameSingles) 2 else 4
 
-//    private fun disableDoNotDisturb() {
-//        try {
-//            if (notificationManager.isNotificationPolicyAccessGranted) {
-//                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
-//                println("Do-Not-Disturb disabled")
-//            }
-//        } catch (e: Exception) {
-//            println("Failed to disable DND: ${e.message}")
-//        }
-//    }
+    Log.d("BowlsScorer", "AddEndDialog triggered for END ${endIndex + 1}")
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("Adding END ${endIndex + 1}") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Up", color = Color.White, fontSize = 20.sp)
+                        Surface(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            if (!themClick && !meClick || meClick) {
+                                                meClick = true
+                                                bowls++
+                                                if (bowls < maxClick && upScore < maxScorePerSide) upScore++
+                                            }
+                                        },
+                                        onLongPress = {
+                                            if (upScore > 0) {
+                                                upScore--
+                                                bowls = maxOf(0, bowls - 1)
+                                            }
+                                        }
+                                    )
+                                },
+                            color = Color(0xFFB0B0B0),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(16.dp)) {
+                                Text("$upScore", color = Color.White, fontSize = 40.sp)
+                            }
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Down", color = Color.Yellow, fontSize = 20.sp)
+                        Surface(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            if (!themClick && !meClick || themClick) {
+                                                themClick = true
+                                                bowls++
+                                                if (bowls < maxClick && downScore < maxScorePerSide) downScore++
+                                            }
+                                        },
+                                        onLongPress = {
+                                            if (downScore > 0) {
+                                                downScore--
+                                                bowls = maxOf(0, bowls - 1)
+                                            }
+                                        }
+                                    )
+                                },
+                            color = Color(0xFFB0B0B0),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(16.dp)) {
+                                Text("$downScore", color = Color.Yellow, fontSize = 40.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    Log.d("BowlsScorer", "Confirm clicked: upScore=$upScore, downScore=$downScore")
+                    onConfirm(upScore, downScore)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
+                enabled = upScore > 0 || downScore > 0
+            ) { Text("Confirm") }
+        },
+        dismissButton = {
+            Button(
+                onClick = {
+                    Log.d("BowlsScorer", "Cancel clicked")
+                    onCancel()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)
+            ) { Text("Cancel") }
+        },
+        containerColor = Color.Black,
+        titleContentColor = Color.White,
+        textContentColor = Color.White,
+        modifier = modifier
+    )
+}
 
 @Composable
 fun OnboardingScreen(
@@ -249,7 +354,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var addingEnd by remember { mutableStateOf<Int?>(null) }
     var tempAddUpScore by remember { mutableStateOf(0) }
     var tempAddDownScore by remember { mutableStateOf(0) }
-//    val coroutineScope = rememberCoroutineScope()
 
     var myScore by rememberSaveable { mutableStateOf(0) }
     var theirScore by rememberSaveable { mutableStateOf(0) }
@@ -285,27 +389,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         maxClick = 8
         maxScorePerSide = 4
     }
-// Drop clock in here?
-//    var currentTime by remember { mutableStateOf(LocalTime.now()) }
-//    LaunchedEffect(Unit) {
-//        while (true) {
-//            currentTime = LocalTime.now()
-//            delay(1000)
-//        }
-//    }
-//    Column(
-//        modifier = Modifier.fillMaxWidth(),
-//        horizontalAlignment = Alignment.CenterHorizontally
-//    ) {
-//        CurvedRow {
-//            CurvedText(
-//                text = currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-//                color = Color.White,
-//                modifier = Modifier.background(Color.Black)
-//            )
-//        }
-//    }
-// Drop clock in here?
 
     LaunchedEffect(myScore, theirScore) {
         if (myScore >= 21 || theirScore >= 21) {
@@ -370,11 +453,11 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         view.playSoundEffect(SoundEffectConstants.CLICK)
     }
 
-    fun completeAddEnd() {
+    fun completeAddEnd(upScore: Int, downScore: Int) {
         if (addingEnd != null) {
             println("Before adding End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
             val updatedHistory = mutableListOf<Triple<Int, Int, Int>>()
-            val newEnd = Triple(addingEnd!!, tempAddUpScore, tempAddDownScore)
+            val newEnd = Triple(addingEnd!!, upScore, downScore)
             endHistory.filter { it.first < addingEnd!! }.forEach { updatedHistory.add(it) }
             updatedHistory.add(newEnd)
             endHistory.filter { it.first >= addingEnd!! }.forEach { updatedHistory.add(Triple(it.first + 1, it.second, it.third)) }
@@ -382,20 +465,17 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             endHistory.addAll(updatedHistory)
             endHistory.sortBy { it.first }
             endCount = endHistory.size + 1
-            println("After adding End $addingEnd: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
             myScore = endHistory.sumOf { it.second }
             theirScore = endHistory.sumOf { it.third }
             strtMyScore = myScore
             strtTheirScore = theirScore
-            Toast.makeText(mContext, "End $addingEnd added", Toast.LENGTH_SHORT).show()
+            Toast.makeText(mContext, "End $addingEnd added with $upScore-$downScore", Toast.LENGTH_SHORT).show()
             addingEnd = null
-            tempAddUpScore = 0
-            tempAddDownScore = 0
-            tempMeClick = false
-            tempThemClick = false
-            tempBowls = 0
             resetCurrentEnd()
             view.playSoundEffect(SoundEffectConstants.CLICK)
+            println("After adding End: ${endHistory.map { "(${it.first}, ${it.second}, ${it.third})" }}")
+        } else {
+            println("Error: addingEnd is null in completeAddEnd")
         }
     }
 
@@ -408,6 +488,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             tempThemClick = false
             tempBowls = 0
             editingEnd = endNum
+            println("Editing end $endNum")
         }
     }
 
@@ -418,6 +499,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         tempThemClick = false
         tempBowls = 0
         addingEnd = endNum
+        println("Starting to add end $endNum")
     }
 
     fun replaceEnd(endNum: Int) {
@@ -429,8 +511,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         modifier = modifier
             .fillMaxSize()
             .pointerInput(Unit) { detectTapGestures(/* ... */) },
-// colour change for switch to 'Edit END SCREEN'
-//        color = if (isScoringCurrentEnd) Color(0xFF8B0000) else Color.Black // Dark red
         color = if (isScoringCurrentEnd) Color(0xFF00008B) else Color.Black // Dark blue
     ) {
         if (gameOver) {
@@ -492,28 +572,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 Text("Editing End $editingEnd", color = Color.White, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp).offset(y = (-4).dp))
             }
         } else if (addingEnd != null) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-// GREG Changing digits to blue?
-//
-//GREG Changing digits to blue?
-                Text("Adding End $addingEnd", color = Color.White, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
-                val hasChanges = tempAddUpScore > 0 || tempAddDownScore > 0
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = { view.playSoundEffect(SoundEffectConstants.CLICK); if (hasChanges) completeAddEnd() else { addingEnd = null; resetCurrentEnd() } },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
-                    ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
-                }
-            }
+            AddEndDialog(
+                endIndex = addingEnd!! - 1, // Adjust for display
+                gameSingles = gameSingles,
+                onConfirm = { up, down -> completeAddEnd(up, down) },
+                onCancel = { addingEnd = null }
+            )
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -542,7 +606,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     ) { Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) { Text(if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore", color = Color.Yellow, fontSize = 60.sp) } }
                 }
             }
-// THIS COLUMN GREG?
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -560,25 +623,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         ) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Text(text = "$endCount", fontSize = 26.sp, modifier = Modifier.offset(x = -15.dp, y = -4.dp)) } }
                     }
                 }
-//  NEW CLOCK
-//        var currentTime by remember { mutableStateOf(LocalTime.now()) }
-//        LaunchedEffect(Unit) {
-//            while (true) {
-//                currentTime = LocalTime.now()
-//                delay(1000)
-//            }
-//        }
-//       Spacer(modifier = Modifier.height(8.dp)) // Add this
-//                Text(
-//                    text = "TEST",
-//                    color = Color.White,
-//                    modifier = Modifier
-//                        .background(Color.Black)
-//                        .padding(4.dp)
-//                        .offset(x = 0.dp, y = 60.dp),
-//                    fontSize = 16.sp
-//                )
-//NEW CLOCK
                 Button(
                     onClick = { showHistoryDialog = true; Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
