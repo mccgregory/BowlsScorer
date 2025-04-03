@@ -570,9 +570,11 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         color = Color.Black,
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                if (isScoringCurrentEnd) "$currentUpScore" else "$myScore",
+//                        Box(modifier = Modifier.padding(8.dp),
+//                            contentAlignment = Alignment.Center) {
+//                            Text(
+//                                if (isScoringCurrentEnd) "$currentUpScore"
+//                                else "$myScore",
                         Box(modifier = Modifier.padding(8.dp),
                             contentAlignment = Alignment.Center) {
                             Text(
@@ -619,9 +621,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         color = Color.Black,
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore",
+//                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
+//                            Text(
+//                                if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore",
                         Box(modifier = Modifier.padding(8.dp),
                             contentAlignment = Alignment.Center) {
                             Text(
@@ -649,11 +651,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Row {
                         Text(
                             text = "END",
-                            color = Color.Green,
+                           color = Color.Green,
                             fontSize = 25.sp,
-                            modifier = Modifier.padding(end = 8.dp, top = 4.dp).offset(x = 45.dp)
                             modifier = Modifier.padding(end = 8.dp,
-                                top = 4.dp).offset(x = 45.dp)
+                            top = 4.dp).offset(x = 45.dp)
+//                            modifier = Modifier.padding(end = 8.dp,
+//                                top = 4.dp).offset(x = 45.dp)
                         )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
