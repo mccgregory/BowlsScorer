@@ -1,6 +1,5 @@
 package com.example.bowls
 // Greg, this is the working ADD-END
-// WORKING ADD-END code
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -360,8 +359,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
 
     Surface(
         modifier = modifier.pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } }) },
-        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else Color.Black
-    ) {
+        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black    ) {
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = if (myScore >= 21) "Up Wins!" else "Down Wins!", color = if (myScore >= 21) Color.White else Color.Yellow, fontSize = 20.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
@@ -371,6 +369,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(onClick = { mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Exit") }
                 }
             }
+//==============================================================
         } else if (editingEnd != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -386,7 +385,10 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
                             .offset(x = 2.dp, y = 0.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick && tempMyScore < maxScorePerSide) tempMyScore++ } }, onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
+                            .pointerInput(Unit) { detectTapGestures(
+                                onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick && tempMyScore < maxScorePerSide) tempMyScore++ } },
+                                onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1); if (tempMyScore == 0) tempMeClick = false } }
+                            ) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempMyScore", color = Color.White, fontSize = 50.sp) }
                         }
                     }
@@ -395,11 +397,15 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         Surface(modifier = Modifier
                             .padding(start = 4.dp, end = 8.dp)
                             .offset(x = (-10).dp, y = 0.dp)
-                            .pointerInput(Unit) { detectTapGestures(onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick && tempTheirScore < maxScorePerSide) tempTheirScore++ } }, onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1) } }) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
+                            .pointerInput(Unit) { detectTapGestures(
+                                onTap = { if (!tempThemClick && !tempMeClick || tempThemClick) { tempThemClick = true; tempBowls++; if (tempBowls < maxClick && tempTheirScore < maxScorePerSide) tempTheirScore++ } },
+                                onLongPress = { if (tempTheirScore > 0) { tempTheirScore--; tempBowls = maxOf(0, tempBowls - 1); if (tempTheirScore == 0) tempThemClick = false } }
+                            ) }, color = Color(0xFFB0B0B0), shape = RoundedCornerShape(8.dp)) {
                             Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) { Text("$tempTheirScore", color = Color.Yellow, fontSize = 50.sp) }
                         }
                     }
                 }
+//==============================================================================
                 val originalEnd = endHistory.firstOrNull { it.first == editingEnd }
                 val hasChanges = originalEnd != null && (tempMyScore != originalEnd.second || tempTheirScore != originalEnd.third)
                 Row(
@@ -438,6 +444,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+//--------------------------------------------------------
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -460,6 +467,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                         if (tempAddUpScore > 0) {
                                             tempAddUpScore--
                                             tempBowls = maxOf(0, tempBowls - 1)
+                                            if (tempAddUpScore == 0) tempMeClick = false
                                         }
                                     }
                                 )
@@ -490,6 +498,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                         if (tempAddDownScore > 0) {
                                             tempAddDownScore--
                                             tempBowls = maxOf(0, tempBowls - 1)
+                                            if (tempAddDownScore == 0) tempThemClick = false
                                         }
                                     }
                                 )
@@ -503,6 +512,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         }
                     }
                 }
+//---------------------------------------------------
                 Text(
                     "Adding End $addingEnd",
                     color = Color.White,
@@ -570,11 +580,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         color = Color.Black,
                         shape = RoundedCornerShape(8.dp)
                     ) {
-//                        Box(modifier = Modifier.padding(8.dp),
-//                            contentAlignment = Alignment.Center) {
-//                            Text(
-//                                if (isScoringCurrentEnd) "$currentUpScore"
-//                                else "$myScore",
                         Box(modifier = Modifier.padding(8.dp),
                             contentAlignment = Alignment.Center) {
                             Text(
@@ -621,9 +626,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         color = Color.Black,
                         shape = RoundedCornerShape(8.dp)
                     ) {
-//                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
-//                            Text(
-//                                if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore",
                         Box(modifier = Modifier.padding(8.dp),
                             contentAlignment = Alignment.Center) {
                             Text(
@@ -655,8 +657,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             fontSize = 25.sp,
                             modifier = Modifier.padding(end = 8.dp,
                             top = 4.dp).offset(x = 45.dp)
-//                            modifier = Modifier.padding(end = 8.dp,
-//                                top = 4.dp).offset(x = 45.dp)
                         )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
@@ -685,7 +685,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     modifier = Modifier.size(40.dp).offset(y = 20.dp),
                     shape = CircleShape
                 ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
-// history button to here
             }
         }
 
@@ -727,14 +726,34 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             fontSize = 24.sp,
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
                         )
-                        if (endHistory.isEmpty()) {
+//--------------------------------------------------------------------------
+                        if (endHistory.isEmpty())
+                        {
                             Text(
                                 "No ends yet",
                                 color = Color(0xFFD3D3D3),
                                 fontSize = 22.sp,
                                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp)
                             )
-                        } else {
+
+                            // Add Close button at the bottom
+                            if (endHistory.isEmpty())
+                            {
+                                Button(
+                                    onClick = { showHistoryDialog = false },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
+                                    modifier = Modifier
+                                        .align(Alignment.CenterHorizontally)
+    //                                    .padding(bottom = 4.dp)
+                                        .size(width = 120.dp, height = 30.dp)
+                                        .offset(y = 20.dp),
+                                ) {
+                                    Text("Close", fontSize = 14.sp)
+                                  }
+                             }
+                        }
+//--------------------------------------------------------------
+                        else {
                             val listState = rememberScalingLazyListState()
                             ScalingLazyColumn(
                                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp),
@@ -779,7 +798,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
             }
         }
-// History to here
     }
 }
 
