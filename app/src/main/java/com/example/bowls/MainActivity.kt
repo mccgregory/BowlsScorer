@@ -1,5 +1,6 @@
 package com.example.bowls
 // Greg, this is the working ADD-END
+// WORKING ADD-END code
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -572,6 +573,11 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
                             Text(
                                 if (isScoringCurrentEnd) "$currentUpScore" else "$myScore",
+                        Box(modifier = Modifier.padding(8.dp),
+                            contentAlignment = Alignment.Center) {
+                            Text(
+                                if (isScoringCurrentEnd) "$currentUpScore"
+                                else "$myScore",
                                 color = Color.White,
                                 fontSize = 60.sp
                             )
@@ -616,6 +622,12 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
                             Text(
                                 if (isScoringCurrentEnd) "$currentDownScore" else "$theirScore",
+                        Box(modifier = Modifier.padding(8.dp),
+                            contentAlignment = Alignment.Center) {
+                            Text(
+                                if (isScoringCurrentEnd)
+                                    "$currentDownScore"
+                                else "$theirScore",
                                 color = Color.Yellow,
                                 fontSize = 60.sp
                             )
@@ -640,6 +652,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             color = Color.Green,
                             fontSize = 25.sp,
                             modifier = Modifier.padding(end = 8.dp, top = 4.dp).offset(x = 45.dp)
+                            modifier = Modifier.padding(end = 8.dp,
+                                top = 4.dp).offset(x = 45.dp)
                         )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
@@ -668,6 +682,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     modifier = Modifier.size(40.dp).offset(y = 20.dp),
                     shape = CircleShape
                 ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
+// history button to here
             }
         }
 
@@ -761,6 +776,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 }
             }
         }
+// History to here
     }
 }
 
