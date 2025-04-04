@@ -39,6 +39,8 @@ import android.util.Log
 import androidx.activity.compose.BackHandler // For Compose back handling
 import android.os.Vibrator
 import android.os.VibrationEffect
+import java.text.SimpleDateFormat
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 //    private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -873,9 +875,26 @@ fun resetGame() {
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
+//--------------------------------------------------------
         if (showHistoryDialog) {
             Dialog(
-                onDismissRequest = { showHistoryDialog = false },
+                onDismissRequest = {
+                    showHistoryDialog = false
+                    if (gameOver) { // Only save file at game over
+                        val endTime = System.currentTimeMillis()
+                        val elapsedTime = startTime?.let { endTime - it } ?: 0L
+                        val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy").format(endTime)}"
+                        val file = File(context.filesDir, "$fileName.txt")
+                        file.writeText(
+                            "Start Time: ${startTime?.let { SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(it) } ?: "Not recorded"}\n" +
+                                    "End Scores: ${endHistory.joinToString { "${it.first}: ${it.second}-${it.third}" }}\n" +
+                                    "End Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endTime)}\n" +
+                                    "Elapsed Time: ${elapsedTime / 60000} minutes"
+                        )
+                        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+                    }
+                    showGameOverOptions = true
+                },
                 properties = DialogProperties(usePlatformDefaultWidth = false)
             ) {
                 Surface(
@@ -883,45 +902,29 @@ fun resetGame() {
                     color = Color.Black
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(16.dp)
+                        modifier = Modifier.fillMaxSize().padding(8.dp), // Reduced padding for more space
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             "End History",
                             color = Color(0xFFD3D3D3),
-                            fontSize = 24.sp,
-                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
+                            fontSize = 20.sp, // Slightly smaller for Wear OS
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
-                        if (endHistory.isEmpty())
-                        {
+                        if (endHistory.isEmpty()) {
                             Text(
                                 "No ends yet",
                                 color = Color(0xFFD3D3D3),
-                                fontSize = 22.sp,
-                                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp)
+                                fontSize = 18.sp,
+                                modifier = Modifier.padding(top = 8.dp)
                             )
-
-                            // Add Close button at the bottom
-                            if (endHistory.isEmpty())
-                            {
-                                Button(
-                                    onClick = { showHistoryDialog = false },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
-                                    modifier = Modifier
-                                        .align(Alignment.CenterHorizontally)
-    //                                    .padding(bottom = 4.dp)
-                                        .size(width = 120.dp, height = 30.dp)
-                                        .offset(y = 20.dp),
-                                ) {
-                                    Text("Close", fontSize = 14.sp)
-                                  }
-                             }
-                        }
-                        else {
+                        } else {
                             val listState = rememberScalingLazyListState()
                             ScalingLazyColumn(
                                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp),
                                 state = listState,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 items(endHistory.reversed().size) { index ->
                                     val (endNum, upScore, downScore) = endHistory.reversed()[index]
@@ -930,37 +933,60 @@ fun resetGame() {
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            "$endNum.  ",
-                                            color = Color(0xFF1E90FF),
-                                            fontSize = 24.sp,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Text(
-                                            upScore.toString(),
-                                            color = Color(0xFFD3D3D3),
-                                            fontSize = 24.sp,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Text(
-                                            downScore.toString(),
-                                            color = Color(0xFFFFFF00),
-                                            fontSize = 24.sp,
-                                            modifier = Modifier.weight(1f)
-                                        )
+                                        Text("$endNum.  ", color = Color(0xFF1E90FF), fontSize = 20.sp, modifier = Modifier.weight(1f))
+                                        Text(upScore.toString(), color = Color(0xFFD3D3D3), fontSize = 20.sp, modifier = Modifier.weight(1f))
+                                        Text(downScore.toString(), color = Color(0xFFFFFF00), fontSize = 20.sp, modifier = Modifier.weight(1f))
                                         Button(
                                             onClick = { startEditing(endNum); showHistoryDialog = false },
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E90FF), contentColor = Color.White),
                                             modifier = Modifier.size(width = 48.dp, height = 24.dp)
-                                        ) { Text("Edit", fontSize = 14.sp) }
+                                        ) { Text("Edit", fontSize = 12.sp) }
                                     }
                                 }
                             }
                         }
+                        // Show Saved Matches only after game over
+                        if (gameOver) {
+                            Text(
+                                "Saved Matches",
+                                color = Color(0xFFD3D3D3),
+                                fontSize = 18.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                            val files = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
+                            if (files.isEmpty()) {
+                                Text(
+                                    "No saved matches",
+                                    color = Color(0xFFD3D3D3),
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            } else {
+                                ScalingLazyColumn(
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 80.dp).padding(vertical = 4.dp), // Fixed max height
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(files.size) { index ->
+                                        Text(
+                                            files[index].name,
+                                            color = Color(0xFFD3D3D3),
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Button(
+                            onClick = { showHistoryDialog = false },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
+                            modifier = Modifier.padding(top = 8.dp).size(width = 80.dp, height = 24.dp) // Smaller button
+                        ) { Text("Close", fontSize = 12.sp) }
                     }
                 }
             }
         }
+//--------------------------------------
     }
 }                       // End of Scorer Composable
 
