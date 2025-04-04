@@ -36,8 +36,20 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import android.util.Log
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler // For Compose back handling
+//import android.content.Context
+import android.os.Build
+import android.os.Vibrator
+import android.os.VibrationEffect
+//import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var notificationManager: NotificationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +91,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+//--------------------- end of onCreate
     override fun onDestroy() {
         super.onDestroy()
         disableDoNotDisturb()
@@ -87,9 +99,6 @@ class MainActivity : ComponentActivity() {
         window.decorView.systemUiVisibility = 0
     }
 
-    override fun onBackPressed() {
-        // Prevent back gesture
-    }
 
     // Wear OS-specific dismissal override
     override fun onUserLeaveHint() {
@@ -231,6 +240,78 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         )
     ) { mutableStateListOf<Triple<Int, Int, Int>>() }
 
+//    // Handle swipe-right (back action)
+//    BackHandler(enabled = true, onBack = {
+//        Log.d("BowlsScorer", "Swipe-right intercepted")
+//        coroutineScope.launch { showExitDialog = true }
+//    })
+//---------------------------
+// Handle swipe-right (back action)
+// Handle swipe-right (back action)
+
+// Get the context in the composable scope
+    val context = LocalContext.current
+    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+    BackHandler(enabled = true, onBack = {
+        Log.d("BowlsScorer", "Swipe-right intercepted")
+        // Trigger vibration
+//        val context = LocalContext.current
+//        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(200)
+        }
+        coroutineScope.launch { showExitDialog = true }
+    })
+//----------------------------------------------
+    if (showExitDialog) {
+        Dialog(
+            onDismissRequest = { showExitDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize().background(Color.Black),
+                color = Color.Black
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Are you REALLY sure you want to lose these precious scores?",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = { showExitDialog = false },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray, contentColor = Color.White),
+                            modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                        ) {
+                            Text("No", fontSize = 14.sp)
+                        }
+                        Button(
+                            onClick = { (context as? ComponentActivity)?.finish() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
+                            modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                        ) {
+                            Text("Yes", fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+//---------------------------
+
     if (gameSingles) {
         maxClick = 4 // 2 bowls per player, 2 players
         maxScorePerSide = 2 // Max score per side per end
@@ -359,7 +440,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
 
     Surface(
         modifier = modifier.pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } }) },
-        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black    ) {
+        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black    ) {          // Setting background colour of EDIT Screens
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = if (myScore >= 21) "Up Wins!" else "Down Wins!", color = if (myScore >= 21) Color.White else Color.Yellow, fontSize = 20.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
@@ -799,7 +880,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
         }
     }
-}
+}                       // End of Scorer Composable
 
 @Preview(showBackground = true, widthDp = 320, heightDp = 320)
 @Composable
