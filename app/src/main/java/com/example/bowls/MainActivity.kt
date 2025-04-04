@@ -217,6 +217,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var bowls by rememberSaveable { mutableStateOf(0) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
     var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
+    var startTime by rememberSaveable { mutableStateOf<Long?>(null) } // Added here
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
@@ -225,7 +226,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var tempBowls by remember { mutableStateOf(0) }
     var currentUpScore by remember { mutableStateOf(0) }
     var currentDownScore by remember { mutableStateOf(0) }
-
+    var showGameOverOptions by remember { mutableStateOf(false) } // New state for post-history options
     val endHistory = rememberSaveable(
         saver = Saver(
             save = { history: MutableList<Triple<Int, Int, Int>> -> history.map { triple -> listOf(triple.first, triple.second, triple.third) } },
@@ -242,6 +243,24 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
         coroutineScope.launch { showExitDialog = true }
     })
+//=========================
+fun resetGame() {
+    myScore = 0
+    theirScore = 0
+    strtMyScore = 0
+    strtTheirScore = 0
+    endCount = 1
+    meClick = false
+    themClick = false
+    bowls = 0
+    gameOver = false
+    isScoringCurrentEnd = false
+    endHistory.clear()
+    currentUpScore = 0
+    currentDownScore = 0
+    startTime = null // Reset for new game
+}
+//===========================
     if (showExitDialog) {
         Dialog(
             onDismissRequest = { showExitDialog = false },
@@ -297,26 +316,120 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     LaunchedEffect(myScore, theirScore) {
         if (myScore >= 21 || theirScore >= 21) {
             gameOver = true
+            showHistoryDialog = true // Automatically show history when game ends
             println("Game Over: myScore=$myScore, theirScore=$theirScore")
         }
     }
-
-    fun resetGame() {
-        myScore = 0
-        theirScore = 0
-        strtMyScore = 0
-        strtTheirScore = 0
-        endCount = 1
-        meClick = false
-        themClick = false
-        bowls = 0
-        gameOver = false
-        isScoringCurrentEnd = false
-        endHistory.clear()
-        currentUpScore = 0
-        currentDownScore = 0
+//--------------------------------------------------
+    if (gameOver && !showHistoryDialog && !showGameOverOptions) {
+        // This block is now redundant but kept for clarity; it won’t show unless dialogs are off
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (myScore >= 21) "Up Wins!" else "Down Wins!",
+                color = if (myScore >= 21) Color.White else Color.Yellow,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
     }
 
+    if (showHistoryDialog) {
+        Dialog(
+            onDismissRequest = {
+                showHistoryDialog = false
+                showGameOverOptions = true // Show options after history is dismissed
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize().background(Color.Black),
+                color = Color.Black
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                ) {
+                    Text(
+                        "End History",
+                        color = Color(0xFFD3D3D3),
+                        fontSize = 24.sp,
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
+                    )
+                    // ... (rest of history dialog unchanged)
+                }
+            }
+        }
+    }
+//-----------------------------------------------
+    if (showGameOverOptions) {
+        Dialog(
+            onDismissRequest = { showGameOverOptions = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize().background(Color.Black),
+                color = Color.Black
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (myScore >= 21) "Up Wins!" else "Down Wins!",
+                        color = if (myScore >= 21) Color.White else Color.Yellow,
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                resetGame() // This now works because it's in the outer scope
+                                onNewGame()
+                                showGameOverOptions = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
+                        ) { Text("New Game") }
+                        Button(
+                            onClick = { mContext.finish() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)
+                        ) { Text("Exit") }
+                    }
+                }
+            }
+        }
+    }
+
+//-------------------------------------------------
+
+//============  fun resetGame last home    =======================================
+//
+//    fun resetGame() {
+//        myScore = 0
+//        theirScore = 0
+//        strtMyScore = 0
+//        strtTheirScore = 0
+//        endCount = 1
+//        meClick = false
+//        themClick = false
+//        bowls = 0
+//        gameOver = false
+//        isScoringCurrentEnd = false
+//        endHistory.clear()
+//        currentUpScore = 0
+//        currentDownScore = 0
+//        startTime = null // Reset for new game
+//    }
+//===================================================
     fun resetCurrentEnd() {
         meClick = false
         themClick = false
@@ -415,6 +528,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     Surface(
         modifier = modifier.pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } }) },
         color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black    ) {          // Setting background colour of EDIT Screens
+ //---------------------------------------------
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = if (myScore >= 21) "Up Wins!" else "Down Wins!", color = if (myScore >= 21) Color.White else Color.Yellow, fontSize = 20.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
