@@ -1,5 +1,5 @@
 package com.example.bowls
-// Greg, this is the working ADD-END
+
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -38,15 +38,11 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import android.util.Log
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler // For Compose back handling
-//import android.content.Context
 import android.os.Build
 import android.os.Vibrator
 import android.os.VibrationEffect
-//import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -240,15 +236,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         )
     ) { mutableStateListOf<Triple<Int, Int, Int>>() }
 
-//    // Handle swipe-right (back action)
-//    BackHandler(enabled = true, onBack = {
-//        Log.d("BowlsScorer", "Swipe-right intercepted")
-//        coroutineScope.launch { showExitDialog = true }
-//    })
-//---------------------------
-// Handle swipe-right (back action)
-// Handle swipe-right (back action)
-
 // Get the context in the composable scope
     val context = LocalContext.current
     val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -256,8 +243,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     BackHandler(enabled = true, onBack = {
         Log.d("BowlsScorer", "Swipe-right intercepted")
         // Trigger vibration
-//        val context = LocalContext.current
-//        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
@@ -266,7 +251,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         }
         coroutineScope.launch { showExitDialog = true }
     })
-//----------------------------------------------
     if (showExitDialog) {
         Dialog(
             onDismissRequest = { showExitDialog = false },
@@ -310,7 +294,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
             }
         }
     }
-//---------------------------
 
     if (gameSingles) {
         maxClick = 4 // 2 bowls per player, 2 players
@@ -450,7 +433,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                     Button(onClick = { mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Exit") }
                 }
             }
-//==============================================================
         } else if (editingEnd != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -486,7 +468,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         }
                     }
                 }
-//==============================================================================
                 val originalEnd = endHistory.firstOrNull { it.first == editingEnd }
                 val hasChanges = originalEnd != null && (tempMyScore != originalEnd.second || tempTheirScore != originalEnd.third)
                 Row(
@@ -525,7 +506,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                 verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-//--------------------------------------------------------
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -593,7 +573,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                         }
                     }
                 }
-//---------------------------------------------------
                 Text(
                     "Adding End $addingEnd",
                     color = Color.White,
@@ -807,7 +786,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                             fontSize = 24.sp,
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
                         )
-//--------------------------------------------------------------------------
                         if (endHistory.isEmpty())
                         {
                             Text(
@@ -833,7 +811,6 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                   }
                              }
                         }
-//--------------------------------------------------------------
                         else {
                             val listState = rememberScalingLazyListState()
                             ScalingLazyColumn(
