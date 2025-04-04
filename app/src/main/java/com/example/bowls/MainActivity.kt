@@ -4,7 +4,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
 import android.view.SoundEffectConstants
-import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,16 +35,13 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import android.util.Log
 import androidx.activity.compose.BackHandler // For Compose back handling
-import android.os.Build
 import android.os.Vibrator
 import android.os.VibrationEffect
 
 class MainActivity : ComponentActivity() {
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+//    private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var notificationManager: NotificationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,11 +52,11 @@ class MainActivity : ComponentActivity() {
         enableDoNotDisturb()
 
         // Set aggressive immersive mode
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        or View.SYSTEM_UI_FLAG_FULLSCREEN
-                )
+//        window.decorView.systemUiVisibility = (
+//                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+//                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+//                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+//                )
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
@@ -92,12 +88,13 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         disableDoNotDisturb()
         // Restore system UI on exit
-        window.decorView.systemUiVisibility = 0
+//        window.decorView.systemUiVisibility = 0
     }
 
 
     // Wear OS-specific dismissal override
     override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
         // Prevent right-swipe dismissal
         println("User attempted to leave app via gesture—blocked")
     }
@@ -238,17 +235,11 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
 
 // Get the context in the composable scope
     val context = LocalContext.current
-    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-
+    val vibrator = context.getSystemService(Vibrator::class.java) as Vibrator
     BackHandler(enabled = true, onBack = {
         Log.d("BowlsScorer", "Swipe-right intercepted")
         // Trigger vibration
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(200)
-        }
+        vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
         coroutineScope.launch { showExitDialog = true }
     })
     if (showExitDialog) {
