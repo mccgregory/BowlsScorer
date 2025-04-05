@@ -286,7 +286,8 @@ fun saveMatchFile() {
 
         // Build the scores section with both End Scores and Game Scores
         val scoresBuilder = StringBuilder()
-        scoresBuilder.append("End Scores            Game Scores\n")
+        scoresBuilder.append("End Scores          Game Scores\n")
+        scoresBuilder.append("==========          ===========\n")
         endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
             val gameScore = gameScores[index]
             // Format: "End 1: 4-0            4-0"
@@ -297,7 +298,7 @@ fun saveMatchFile() {
         // Write the file
         file.writeText(
             "Start Time: ${startTime?.let { SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(it) } ?: "Not recorded"}\n" +
-                    scoresBuilder.toString() +
+                    scoresBuilder.toString() + " \n" +
                     "End Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endTime)}\n" +
                     "Elapsed Time: ${elapsedTime / 60000} minutes\n"
         )
@@ -993,13 +994,20 @@ fun saveMatchFile() {
                                 items(endHistory.reversed().size) { index ->
                                     val (endNum, upScore, downScore) = endHistory.reversed()[index]
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+//                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+//                                        horizontalArrangement = Arrangement.SpaceBetween,
+//                                        verticalAlignment = Alignment.CenterVertically
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 4.dp, vertical = 4.dp) // Added vertical padding
+                                            .heightIn(min = 32.dp), // Ensure minimum height for easier tapping
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
+
                                     ) {
-                                        Text("$endNum.  ", color = Color(0xFF1E90FF), fontSize = 20.sp, modifier = Modifier.weight(1f))
-                                        Text(upScore.toString(), color = Color(0xFFD3D3D3), fontSize = 20.sp, modifier = Modifier.weight(1f))
-                                        Text(downScore.toString(), color = Color(0xFFFFFF00), fontSize = 20.sp, modifier = Modifier.weight(1f))
+                                        Text("$endNum.  ", color = Color(0xFF1E90FF), fontSize = 26.sp, modifier = Modifier.weight(1f))
+                                        Text(upScore.toString(), color = Color(0xFFD3D3D3), fontSize = 26.sp, modifier = Modifier.weight(1f))
+                                        Text(downScore.toString(), color = Color(0xFFFFFF00), fontSize = 26.sp, modifier = Modifier.weight(1f))
                                         Button(
                                             onClick = { startEditing(endNum); showHistoryDialog = false },
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E90FF), contentColor = Color.White),
@@ -1011,12 +1019,12 @@ fun saveMatchFile() {
                         }
                         // Show Saved Matches only after game over
                         if (gameOver) {
-                            Text(
-                                "Saved Matches",
-                                color = Color(0xFFD3D3D3),
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
+//                            Text(
+//                                "Saved Matches",
+//                                color = Color(0xFFD3D3D3),
+//                                fontSize = 18.sp,
+//                                modifier = Modifier.padding(top = 8.dp)
+//                            )
                             val files = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
                             if (files.isEmpty()) {
                                 Text(
@@ -1025,21 +1033,22 @@ fun saveMatchFile() {
                                     fontSize = 16.sp,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
-                            } else {
-                                ScalingLazyColumn(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 80.dp).padding(vertical = 4.dp), // Fixed max height
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    items(files.size) { index ->
-                                        Text(
-                                            files[index].name,
-                                            color = Color(0xFFD3D3D3),
-                                            fontSize = 14.sp,
-                                            modifier = Modifier.padding(horizontal = 4.dp)
-                                        )
-                                    }
-                                }
                             }
+//                            else {
+//                                ScalingLazyColumn(
+//                                    modifier = Modifier.fillMaxWidth().heightIn(max = 80.dp).padding(vertical = 4.dp), // Fixed max height
+//                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+//                                ) {
+//                                    items(files.size) { index ->
+//                                        Text(
+//                                            files[index].name,
+//                                            color = Color(0xFFD3D3D3),
+//                                            fontSize = 14.sp,
+//                                            modifier = Modifier.padding(horizontal = 4.dp)
+//                                        )
+//                                    }
+//                                }
+//                            }
                         }
                         Button(
                             onClick = { showHistoryDialog = false },
