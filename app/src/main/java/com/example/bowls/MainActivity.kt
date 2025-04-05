@@ -267,7 +267,6 @@ fun resetGame() {
     Log.d("BowlsScorer", "resetGame called, startTime reset to $startTime")
 }
 //===========================
-// Move saveMatchFile() here, before it's called
 fun saveMatchFile() {
     Log.d("BowlsScorer", "saveMatchFile called")
     val endTime = System.currentTimeMillis()
@@ -275,9 +274,30 @@ fun saveMatchFile() {
     val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy").format(endTime)}"
     val file = File(context.filesDir, "$fileName.txt")
     try {
+        // Calculate running totals for Game Scores
+        val gameScores = mutableListOf<Pair<Int, Int>>()
+        var runningUpScore = 0
+        var runningDownScore = 0
+        for (end in endHistory) {
+            runningUpScore += end.second // Up score for this end
+            runningDownScore += end.third // Down score for this end
+            gameScores.add(Pair(runningUpScore, runningDownScore))
+        }
+
+        // Build the scores section with both End Scores and Game Scores
+        val scoresBuilder = StringBuilder()
+        scoresBuilder.append("End Scores            Game Scores\n")
+        endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
+            val gameScore = gameScores[index]
+            // Format: "End 1: 4-0            4-0"
+            scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
+            scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
+        }
+
+        // Write the file
         file.writeText(
             "Start Time: ${startTime?.let { SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(it) } ?: "Not recorded"}\n" +
-                    "End Scores:\n${endHistory.joinToString("\n") { "End ${it.first}: ${it.second}-${it.third}" }}\n" +
+                    scoresBuilder.toString() +
                     "End Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endTime)}\n" +
                     "Elapsed Time: ${elapsedTime / 60000} minutes\n"
         )
