@@ -299,9 +299,9 @@ fun saveMatchFile() {
 
         // Write the file
         file.writeText(
-            "Start Time: ${startTime?.let { SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US).format(it) } ?: "Not recorded"}\n" +
+            "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
                     scoresBuilder.toString() + " \n" +
-                    "End Time: ${SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US).format(endTime)}\n" +
+                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
                     "Elapsed Time: ${elapsedTime / 60000} minutes\n"
         )
         Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
@@ -953,9 +953,9 @@ fun saveMatchFile() {
                         val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
                         val file = File(context.filesDir, "$fileName.txt")
                         file.writeText(
-                            "Start Time: ${startTime?.let { SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US).format(it) } ?: "Not recorded"}\n" +
+                            "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
                                     "End Scores: ${endHistory.joinToString { "${it.first}: ${it.second}-${it.third}" }}\n" +
-                                    "End Time: ${SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US).format(endTime)}\n" +
+                                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
                                     "Elapsed Time: ${elapsedTime / 60000} minutes"
                         )
                         Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
