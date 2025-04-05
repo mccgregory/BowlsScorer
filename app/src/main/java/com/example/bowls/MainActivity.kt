@@ -220,6 +220,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var gameOver by rememberSaveable { mutableStateOf(false) }
     var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
     var startTime by rememberSaveable { mutableStateOf<Long?>(null) } // Added here
+    var hasSavedFile by rememberSaveable { mutableStateOf(false) } // Track if we've saved
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
@@ -263,6 +264,27 @@ fun resetGame() {
     startTime = null // Reset for new game
 }
 //===========================
+// Move saveMatchFile() here, before it's called
+fun saveMatchFile() {
+    Log.d("BowlsScorer", "saveMatchFile called")
+    val endTime = System.currentTimeMillis()
+    val elapsedTime = startTime?.let { endTime - it } ?: 0L
+    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy").format(endTime)}"
+    val file = File(context.filesDir, "$fileName.txt")
+    try {
+        file.writeText(
+            "Start Time: ${startTime?.let { SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(it) } ?: "Not recorded"}\n" +
+                    "End Scores: ${endHistory.joinToString { "${it.first}: ${it.second}-${it.third}" }}\n" +
+                    "End Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endTime)}\n" +
+                    "Elapsed Time: ${elapsedTime / 60000} minutes"
+        )
+        Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
+        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Log.e("BowlsScorer", "Failed to save match: ${e.message}")
+    }
+}
+//-----------------------------------------
     if (showExitDialog) {
         Dialog(
             onDismissRequest = { showExitDialog = false },
@@ -316,12 +338,24 @@ fun resetGame() {
     }
 
     LaunchedEffect(myScore, theirScore) {
+        Log.d("BowlsScorer", "LaunchedEffect checking: myScore=$myScore, theirScore=$theirScore")
         if (myScore >= 21 || theirScore >= 21) {
+            Log.d("BowlsScorer", "Setting gameOver to true")
             gameOver = true
-            showHistoryDialog = true // Automatically show history when game ends
-            println("Game Over: myScore=$myScore, theirScore=$theirScore")
         }
     }
+//----------------------------------------------------
+    LaunchedEffect(gameOver) {
+        if (gameOver && !hasSavedFile) {
+            Log.d("BowlsScorer", "Game over confirmed, saving file")
+            saveMatchFile()
+            hasSavedFile = true
+            showHistoryDialog = true
+        }
+    }
+//----------------------------------------------------
+
+
 //--------------------------------------------------
     if (gameOver && !showHistoryDialog && !showGameOverOptions) {
         // This block is now redundant but kept for clarity; it won’t show unless dialogs are off
@@ -395,8 +429,9 @@ fun resetGame() {
                     ) {
                         Button(
                             onClick = {
-                                resetGame() // This now works because it's in the outer scope
+                                resetGame()
                                 onNewGame()
+                                hasSavedFile = false // Reset for next game
                                 showGameOverOptions = false
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
@@ -410,7 +445,6 @@ fun resetGame() {
             }
         }
     }
-
 //-------------------------------------------------
 
 //============  fun resetGame last home    =======================================
