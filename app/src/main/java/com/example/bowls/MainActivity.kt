@@ -1,5 +1,6 @@
 package com.example.bowls
 
+import java.util.Locale // Add this import at the top of MainActivity.kt
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -271,7 +272,8 @@ fun saveMatchFile() {
     Log.d("BowlsScorer", "saveMatchFile called")
     val endTime = System.currentTimeMillis()
     val elapsedTime = startTime?.let { endTime - it } ?: 0L
-    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy").format(endTime)}"
+    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}" // Added Locale.US
+
     val file = File(context.filesDir, "$fileName.txt")
     try {
         // Calculate running totals for Game Scores
