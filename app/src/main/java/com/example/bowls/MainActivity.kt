@@ -221,6 +221,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
     var startTime by rememberSaveable { mutableStateOf<Long?>(null) } // Added here
     var hasSavedFile by rememberSaveable { mutableStateOf(false) } // Track if we've saved
+    var fileList by remember { mutableStateOf(emptyList<File>()) } // Ensure this is here
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
@@ -261,7 +262,9 @@ fun resetGame() {
     endHistory.clear()
     currentUpScore = 0
     currentDownScore = 0
-    startTime = null // Reset for new game
+    startTime = null
+    hasSavedFile = false
+    Log.d("BowlsScorer", "resetGame called, startTime reset to $startTime")
 }
 //===========================
 // Move saveMatchFile() here, before it's called
@@ -274,12 +277,13 @@ fun saveMatchFile() {
     try {
         file.writeText(
             "Start Time: ${startTime?.let { SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(it) } ?: "Not recorded"}\n" +
-                    "End Scores: ${endHistory.joinToString { "${it.first}: ${it.second}-${it.third}" }}\n" +
+                    "End Scores:\n${endHistory.joinToString("\n") { "End ${it.first}: ${it.second}-${it.third}" }}\n" +
                     "End Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(endTime)}\n" +
-                    "Elapsed Time: ${elapsedTime / 60000} minutes"
+                    "Elapsed Time: ${elapsedTime / 60000} minutes\n"
         )
         Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
         Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+        fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
     } catch (e: Exception) {
         Log.e("BowlsScorer", "Failed to save match: ${e.message}")
     }
@@ -478,6 +482,12 @@ fun saveMatchFile() {
 
     fun completeEnd() {
         println("Completing end $endCount: currentUpScore=$currentUpScore, currentDownScore=$currentDownScore")
+        if (startTime == null) {
+            startTime = System.currentTimeMillis()
+            Log.d("BowlsScorer", "Set startTime to $startTime (End $endCount)")
+        } else {
+            Log.d("BowlsScorer", "startTime already set: $startTime (End $endCount)")
+        }
         val upScore = currentUpScore
         val downScore = currentDownScore
         endHistory.add(Triple(endCount, upScore, downScore))
