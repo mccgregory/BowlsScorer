@@ -866,7 +866,7 @@ fun saveMatchFile() {
                         onClick = { resetCurrentEnd() },
                         modifier = Modifier
                             .size(40.dp)
-                            .offset(x = 15.dp, y = 20.dp) // Moves the IconButton down by 20.dp
+                            .offset(x = 0.dp, y = 20.dp) // Moves the IconButton down by 20.dp
                     ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
                     }
@@ -903,15 +903,24 @@ fun saveMatchFile() {
                     }
 //===========================   END of ROW   adjust here greg    ======================================
                 }
+//===================================  Blue 'H' or History Button  ====================================
                 Button(
                     onClick = {
                         showHistoryDialog = true
                         Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                    modifier = Modifier.size(40.dp).offset(y = 20.dp),
+//                    modifier = Modifier.size(45.dp).offset(y = 20.dp),
+                    modifier = Modifier.size(45.dp).offset(y = 20.dp),
                     shape = CircleShape
-                ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
+                )
+//                { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
+                    { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center
+                        ,modifier = Modifier.offset(y = -5.dp) // Moves the "H" up by 5.dp
+                    )
+                }
+//===================================  Blue 'H' or History Button  ====================================
+
             }
         }
 
