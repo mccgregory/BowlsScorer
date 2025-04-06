@@ -643,11 +643,13 @@ fun saveMatchFile() {
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
                         modifier = Modifier.size(width = 60.dp, height = 30.dp)
                     ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
+//-------------------------------------------------------------------
                     Button(
                         onClick = { replaceEnd(editingEnd!!) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                        modifier = Modifier.size(width = 80.dp, height = 35.dp)
                     ) { Text("ADD", fontSize = 14.sp) }
+//------------------------------------------------------------------
                 }
                 Text(
                     "Editing End $editingEnd",
@@ -741,6 +743,7 @@ fun saveMatchFile() {
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+//-------------------------------------------------------
                     Button(
                         onClick = {
                             view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -752,8 +755,10 @@ fun saveMatchFile() {
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                        modifier = Modifier.size(width = 120.dp, height = 40.dp)
                     ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
+//--------------------------------------------------------------------------------
+
                 }
             }
         } else {
@@ -855,7 +860,8 @@ fun saveMatchFile() {
                     }
                 }
             }
-            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally) {
 
 //=========================================== CLEAR or 'X'    adjust here greg    =====================================
                 Row(
@@ -905,18 +911,25 @@ fun saveMatchFile() {
                 }
 //===================================  Blue 'H' or History Button  ====================================
                 Button(
-                    onClick = {
-                        showHistoryDialog = true
-                        Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-//                    modifier = Modifier.size(45.dp).offset(y = 20.dp),
-                    modifier = Modifier.size(45.dp).offset(y = 20.dp),
-                    shape = CircleShape
-                )
-//                { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
-                    { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center
-                        ,modifier = Modifier.offset(y = -5.dp) // Moves the "H" up by 5.dp
+                    onClick = { showHistoryDialog = true },
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 40.dp)
+                        .offset(x = 0.dp, y = 20.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1E90FF),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        "H",
+                        fontSize = 12.sp,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .offset(y = (-14).dp) // Shift the "H" to the top of the button
+                            .padding(top = 2.dp) // Small buffer to avoid clipping
                     )
                 }
 //===================================  Blue 'H' or History Button  ====================================
@@ -998,9 +1011,6 @@ fun saveMatchFile() {
                                 items(endHistory.reversed().size) { index ->
                                     val (endNum, upScore, downScore) = endHistory.reversed()[index]
                                     Row(
-//                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-//                                        horizontalArrangement = Arrangement.SpaceBetween,
-//                                        verticalAlignment = Alignment.CenterVertically
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 4.dp, vertical = 4.dp) // Added vertical padding
@@ -1023,12 +1033,6 @@ fun saveMatchFile() {
                         }
                         // Show Saved Matches only after game over
                         if (gameOver) {
-//                            Text(
-//                                "Saved Matches",
-//                                color = Color(0xFFD3D3D3),
-//                                fontSize = 18.sp,
-//                                modifier = Modifier.padding(top = 8.dp)
-//                            )
                             val files = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
                             if (files.isEmpty()) {
                                 Text(
@@ -1056,9 +1060,11 @@ fun saveMatchFile() {
                         }
                         Button(
                             onClick = { showHistoryDialog = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White),
-                            modifier = Modifier.padding(top = 8.dp).size(width = 80.dp, height = 24.dp) // Smaller button
-                        ) { Text("Close", fontSize = 12.sp) }
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+                            modifier = Modifier.padding(top = 0.dp)
+                                .size(width = 80.dp, height = 24.dp), // Smaller button
+                                contentPadding = PaddingValues(2.dp) // Reduce padding to fit text
+                        ) { Text("Close", fontSize = 14.sp) }
                     }
                 }
             }
