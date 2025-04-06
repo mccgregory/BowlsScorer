@@ -305,7 +305,8 @@ fun saveMatchFile() {
                     "Elapsed Time: ${elapsedTime / 60000} minutes\n"
         )
         Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
-        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show() // Changed to LENGTH_LONG
         fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
     } catch (e: Exception) {
         Log.e("BowlsScorer", "Failed to save match: ${e.message}")
@@ -474,25 +475,6 @@ fun saveMatchFile() {
     }
 //-------------------------------------------------
 
-//============  fun resetGame last home    =======================================
-//
-//    fun resetGame() {
-//        myScore = 0
-//        theirScore = 0
-//        strtMyScore = 0
-//        strtTheirScore = 0
-//        endCount = 1
-//        meClick = false
-//        themClick = false
-//        bowls = 0
-//        gameOver = false
-//        isScoringCurrentEnd = false
-//        endHistory.clear()
-//        currentUpScore = 0
-//        currentDownScore = 0
-//        startTime = null // Reset for new game
-//    }
-//===================================================
     fun resetCurrentEnd() {
         meClick = false
         themClick = false
@@ -874,28 +856,36 @@ fun saveMatchFile() {
                 }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+
+//=========================================== CLEAR or 'X'    adjust here greg    =====================================
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 0.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(
                         onClick = { resetCurrentEnd() },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .offset(x = 15.dp, y = 20.dp) // Moves the IconButton down by 20.dp
                     ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
                     }
+//=========================================== CLEAR or 'X'    adjust here greg    =====================================
+
+//=========================================== 'END bits'    adjust here greg    =====================================
                     Row {
                         Text(
                             text = "END",
                            color = Color.Green,
                             fontSize = 25.sp,
                             modifier = Modifier.padding(end = 8.dp,
-                            top = 4.dp).offset(x = 45.dp)
+//                                top = 4.dp).offset(x = 45.dp)
+                                    top = 4.dp).offset(x = 46.dp , y = 22.dp)
                         )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier.height(40.dp).width(80.dp).offset(x = 45.dp)
+                            modifier = Modifier.height(40.dp).width(80.dp).offset(x = 39.dp, y = 19.dp)
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -904,11 +894,14 @@ fun saveMatchFile() {
                                 Text(
                                     text = "$endCount",
                                     fontSize = 26.sp,
-                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp)
+//                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp)
+                                    modifier = Modifier.offset(x = -20.dp, y = -2.dp)
                                 )
                             }
+//===========================   adjust here greg    ======================================
                         }
                     }
+//===========================   END of ROW   adjust here greg    ======================================
                 }
                 Button(
                     onClick = {
