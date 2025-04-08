@@ -641,13 +641,14 @@ fun saveMatchFile() {
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp)
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp),contentPadding = PaddingValues(0.dp) // Remove default padding
                     ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
 //-------------------------------------------------------------------
                     Button(
                         onClick = { replaceEnd(editingEnd!!) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-                        modifier = Modifier.size(width = 80.dp, height = 35.dp)
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp),
+                        contentPadding = PaddingValues(0.dp)
                     ) { Text("ADD", fontSize = 14.sp) }
 //------------------------------------------------------------------
                 }
@@ -863,7 +864,7 @@ fun saveMatchFile() {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally) {
 
-//=========================================== CLEAR or 'X'    adjust here greg    =====================================
+//=========================================== CLEAR or 'X'    =====================================
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 0.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -876,38 +877,28 @@ fun saveMatchFile() {
                     ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
                     }
-//=========================================== CLEAR or 'X'    adjust here greg    =====================================
+//=========================================== CLEAR or 'X'    =====================================
 
 //=========================================== 'END bits'    adjust here greg    =====================================
                     Row {
-                        Text(
-                            text = "END",
-                           color = Color.Green,
-                            fontSize = 25.sp,
-                            modifier = Modifier.padding(end = 8.dp,
-//                                top = 4.dp).offset(x = 45.dp)
-                                    top = 4.dp).offset(x = 46.dp , y = 22.dp)
-                        )
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                            modifier = Modifier.height(40.dp).width(80.dp).offset(x = 39.dp, y = 19.dp)
+                                    modifier = Modifier.height(26.dp).width(78.dp).offset(x = 0.dp, y = 26.dp),
+                            contentPadding = PaddingValues(0.dp) // Remove default padding
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
                                 Text(
-                                    text = "$endCount",
-                                    fontSize = 26.sp,
-//                                    modifier = Modifier.offset(x = -15.dp, y = -4.dp)
-                                    modifier = Modifier.offset(x = -20.dp, y = -2.dp)
+                                    text = "END: $endCount",
+                                    fontSize = 18.sp,
+                                    color = Color.Black,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                            }
-//===========================   adjust here greg    ======================================
+//----------------------------------------------------------------------------------------
                         }
+//===========================   END Button    ======================================
                     }
-//===========================   END of ROW   adjust here greg    ======================================
+//===========================   END of ROW    ======================================
                 }
 //===================================  Blue 'H' or History Button  ====================================
                 Button(
@@ -940,9 +931,9 @@ fun saveMatchFile() {
         if (showExitDialog) {
             AlertDialog(
                 onDismissRequest = { showExitDialog = false },
-                title = { Text("Exit App") },
-                text = { Text("Are you sure you want to exit?") },
-                confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Confirm") } },
+                title = { Text("Exit App?") },
+//                text = { Text("Are you sure you want to exit?") },
+                confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("EXIT!!!") } },
                 dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
@@ -950,10 +941,10 @@ fun saveMatchFile() {
         if (showDeadEndDialog) {
             AlertDialog(
                 onDismissRequest = { showDeadEndDialog = false },
-                title = { Text("Confirm Dead End") },
-                text = { Text("This is a dead end. Move to next end?") },
-                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Confirm") } },
-                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Cancel") } },
+                title = { Text("Dead END?") },
+//                text = { Text("This is a dead end. Move to next end?") },
+                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Dead-END") } },
+                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
