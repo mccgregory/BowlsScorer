@@ -42,6 +42,7 @@ import android.os.Vibrator
 import android.os.VibrationEffect
 import java.text.SimpleDateFormat
 import java.io.File
+import com.example.bowls.sendMatchFileToPhone
 
 class MainActivity : ComponentActivity() {
 //    private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -188,7 +189,7 @@ fun OnboardingScreen(
                 title = { Text("Exit App") },
                 text = { Text("Are you sure you want to exit?") },
                 confirmButton = { Button(onClick = { showExitDialog = false; context.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Confirm") } },
-                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
+                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
@@ -272,7 +273,7 @@ fun saveMatchFile() {
     Log.d("BowlsScorer", "saveMatchFile called")
     val endTime = System.currentTimeMillis()
     val elapsedTime = startTime?.let { endTime - it } ?: 0L
-    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}" // Added Locale.US
+    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
 
     val file = File(context.filesDir, "$fileName.txt")
     try {
@@ -298,16 +299,17 @@ fun saveMatchFile() {
         }
 
         // Write the file
-        file.writeText(
-            "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
-                    scoresBuilder.toString() + " \n" +
-                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
-                    "Elapsed Time: ${elapsedTime / 60000} minutes\n"
-        )
+        val fileContent = "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
+                scoresBuilder.toString() + " \n" +
+                "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
+                "Elapsed Time: ${elapsedTime / 60000} minutes\n"
+        file.writeText(fileContent)
         Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
-//        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
-        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show() // Changed to LENGTH_LONG
+        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
         fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
+
+        // Send the file to the phone
+        sendMatchFileToPhone(context, "$fileName.txt", fileContent)
     } catch (e: Exception) {
         Log.e("BowlsScorer", "Failed to save match: ${e.message}")
     }
@@ -603,7 +605,7 @@ fun saveMatchFile() {
                         Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 10.dp), color = Color.White, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = 0.dp)
+                            .offset(x = 4.dp, y = 0.dp)
                             .pointerInput(Unit) { detectTapGestures(
                                 onTap = { if (!tempThemClick && !tempMeClick || tempMeClick) { tempMeClick = true; tempBowls++; if (tempBowls < maxClick && tempMyScore < maxScorePerSide) tempMyScore++ } },
                                 onLongPress = { if (tempMyScore > 0) { tempMyScore--; tempBowls = maxOf(0, tempBowls - 1); if (tempMyScore == 0) tempMeClick = false } }
@@ -673,7 +675,7 @@ fun saveMatchFile() {
                         Text("Up", modifier = Modifier.padding(start = 8.dp, bottom = 4.dp).offset(x = 35.dp, y = 10.dp), color = Color.White, fontSize = 25.sp)
                         Surface(modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = 0.dp)
+                            .offset(x = 4.dp, y = 0.dp)
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onTap = {
@@ -884,7 +886,7 @@ fun saveMatchFile() {
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                                    modifier = Modifier.height(26.dp).width(78.dp).offset(x = 0.dp, y = 26.dp),
+                                    modifier = Modifier.height(26.dp).width(76.dp).offset(x = -2.dp, y = 26.dp),
                             contentPadding = PaddingValues(0.dp) // Remove default padding
                         ) {
                                 Text(
@@ -904,9 +906,10 @@ fun saveMatchFile() {
                 Button(
                     onClick = { showHistoryDialog = true },
                     modifier = Modifier
-                        .size(width = 40.dp, height = 40.dp)
+                        .size(width = 60.dp, height = 50.dp)
                         .offset(x = 0.dp, y = 20.dp),
-                    shape = RoundedCornerShape(8.dp),
+//                    shape = RoundedCornerShape(8.dp),
+                    shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF1E90FF),
                         contentColor = Color.White
@@ -915,7 +918,7 @@ fun saveMatchFile() {
                 ) {
                     Text(
                         "H",
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -923,6 +926,17 @@ fun saveMatchFile() {
                             .padding(top = 2.dp) // Small buffer to avoid clipping
                     )
                 }
+//-----------------------------------------------------------------------------------
+//                Button(
+//                    onClick = {
+//                        showHistoryDialog = true
+//                        Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show()
+//                    },
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+//                    modifier = Modifier.size(40.dp).offset(y = 20.dp),
+//
+//                    shape = CircleShape
+//                ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
 //===================================  Blue 'H' or History Button  ====================================
 
             }
@@ -934,7 +948,7 @@ fun saveMatchFile() {
                 title = { Text("Exit App?") },
 //                text = { Text("Are you sure you want to exit?") },
                 confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("EXIT!!!") } },
-                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
+                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
@@ -944,7 +958,7 @@ fun saveMatchFile() {
                 title = { Text("Dead END?") },
 //                text = { Text("This is a dead end. Move to next end?") },
                 confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Dead-END") } },
-                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)) { Text("Cancel") } },
+                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
@@ -1016,7 +1030,8 @@ fun saveMatchFile() {
                                         Button(
                                             onClick = { startEditing(endNum); showHistoryDialog = false },
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E90FF), contentColor = Color.White),
-                                            modifier = Modifier.size(width = 48.dp, height = 24.dp)
+                                            modifier = Modifier.size(width = 48.dp, height = 24.dp),
+                                            contentPadding = PaddingValues(0.dp)
                                         ) { Text("Edit", fontSize = 12.sp) }
                                     }
                                 }
