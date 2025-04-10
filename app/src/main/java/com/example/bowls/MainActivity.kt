@@ -926,32 +926,56 @@ fun saveMatchFile() {
                             .padding(top = 2.dp) // Small buffer to avoid clipping
                     )
                 }
-//-----------------------------------------------------------------------------------
-//                Button(
-//                    onClick = {
-//                        showHistoryDialog = true
-//                        Toast.makeText(mContext, "History opened", Toast.LENGTH_SHORT).show()
-//                    },
-//                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
-//                    modifier = Modifier.size(40.dp).offset(y = 20.dp),
-//
-//                    shape = CircleShape
-//                ) { Text("H", fontSize = 12.sp, textAlign = TextAlign.Center) }
-//===================================  Blue 'H' or History Button  ====================================
-
             }
         }
-
-        if (showExitDialog) {
+//===================================
+        if (showExitDialog)
+        {
             AlertDialog(
-                onDismissRequest = { showExitDialog = false },
-                title = { Text("Exit App?") },
-//                text = { Text("Are you sure you want to exit?") },
-                confirmButton = { Button(onClick = { showExitDialog = false; mContext.finish() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("EXIT!!!") } },
-                dismissButton = { Button(onClick = { showExitDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
-                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
-            )
+                        onDismissRequest = { showExitDialog = false },
+                        title = { Text("Exit App?") },
+        //----------------------------------
+                        confirmButton = {
+                            Button(onClick = { showExitDialog = false; mContext.finish() },
+                                modifier = Modifier
+                                    .width(120.dp) // Adjust the button width
+                                    .height(50.dp) // Adjust the button height
+                                    .padding(8.dp), // Add padding around the button (optional)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red, // Background color of the button
+                                    contentColor = Color.White // Default content color (affects text if not overridden)
+                                )
+                            ) {
+                                Text(
+                                    text = "EXIT!!!",
+                                    fontSize = 18.sp, // Adjust the font size
+                                    color = Color.White, // Text color (overrides contentColor)
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = { showExitDialog = false },
+                                modifier = Modifier
+                                    .width(220.dp) // Adjust the button width
+                                    .height(70.dp) // Adjust the button height
+                                    .padding(8.dp), // Add padding around the button (optional)
+                                contentPadding = PaddingValues(0.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Green, // Background color of the button
+                                    contentColor = Color.White // Default content color (affects text if not overridden)
+                                )
+                            ) {
+                                Text(
+                                    text = "Cancel",
+                                    fontSize = 32.sp, // Adjust the font size
+                                    color = Color.Black, // Text color (overrides contentColor)
+                                )
+                            }
+                            }, containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
+                        )
         }
+//===================================
+
         if (showDeadEndDialog) {
             AlertDialog(
                 onDismissRequest = { showDeadEndDialog = false },
