@@ -1,6 +1,6 @@
 package com.example.bowls
 
-import java.util.Locale // Add this import at the top of MainActivity.kt
+import java.util.Locale
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
@@ -37,15 +37,14 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import kotlinx.coroutines.launch
 import android.util.Log
-import androidx.activity.compose.BackHandler // For Compose back handling
+import androidx.activity.compose.BackHandler
 import android.os.Vibrator
 import android.os.VibrationEffect
 import java.text.SimpleDateFormat
 import java.io.File
-import com.example.bowls.sendMatchFileToPhone
+import com.google.android.gms.wearable.* // Add Wearable API imports
 
-class MainActivity : ComponentActivity() {
-//    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListener {
     private lateinit var notificationManager: NotificationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,11 +55,6 @@ class MainActivity : ComponentActivity() {
         enableDoNotDisturb()
 
         // Set aggressive immersive mode
-//        window.decorView.systemUiVisibility = (
-//                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-//                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-//                        or View.SYSTEM_UI_FLAG_FULLSCREEN
-//                )
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
@@ -86,20 +80,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        // Register to listen for requests from the phone
+        Wearable.getMessageClient(this).addListener(this)
     }
-//--------------------- end of onCreate
+
     override fun onDestroy() {
         super.onDestroy()
         disableDoNotDisturb()
-        // Restore system UI on exit
-//        window.decorView.systemUiVisibility = 0
+        // Unregister the message listener
+        Wearable.getMessageClient(this).removeListener(this)
     }
 
-
-    // Wear OS-specific dismissal override
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        // Prevent right-swipe dismissal
         println("User attempted to leave app via gesture—blocked")
     }
 
@@ -124,6 +118,27 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             println("Failed to disable DND: ${e.message}")
+        }
+    }
+
+    // Handle requests from the phone to send match files
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        if (messageEvent.path == "/request_match_files") {
+            Log.d("WatchApp", "Received request for match files")
+            val files = filesDir.listFiles { _, name -> name.startsWith("B") && name.endsWith(".txt") }
+            if (files != null && files.isNotEmpty()) {
+                files.forEach { file ->
+                    val fileName = file.name
+                    val fileContent = file.readText()
+                    Log.d("WatchApp", "Sending file: $fileName")
+                    sendMatchFileToPhone(this, fileName, fileContent)
+                    // Optionally delete the file after sending
+                    file.delete()
+                    Log.d("WatchApp", "Deleted file: $fileName")
+                }
+            } else {
+                Log.d("WatchApp", "No match files found to send")
+            }
         }
     }
 }
@@ -221,9 +236,9 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var bowls by rememberSaveable { mutableStateOf(0) }
     var gameOver by rememberSaveable { mutableStateOf(false) }
     var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
-    var startTime by rememberSaveable { mutableStateOf<Long?>(null) } // Added here
-    var hasSavedFile by rememberSaveable { mutableStateOf(false) } // Track if we've saved
-    var fileList by remember { mutableStateOf(emptyList<File>()) } // Ensure this is here
+    var startTime by rememberSaveable { mutableStateOf<Long?>(null) }
+    var hasSavedFile by rememberSaveable { mutableStateOf(false) }
+    var fileList by remember { mutableStateOf(emptyList<File>()) }
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
@@ -232,7 +247,8 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var tempBowls by remember { mutableStateOf(0) }
     var currentUpScore by remember { mutableStateOf(0) }
     var currentDownScore by remember { mutableStateOf(0) }
-    var showGameOverOptions by remember { mutableStateOf(false) } // New state for post-history options
+    var showGameOverOptions by remember { mutableStateOf(false) }
+
     val endHistory = rememberSaveable(
         saver = Saver(
             save = { history: MutableList<Triple<Int, Int, Int>> -> history.map { triple -> listOf(triple.first, triple.second, triple.third) } },
@@ -240,81 +256,73 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         )
     ) { mutableStateListOf<Triple<Int, Int, Int>>() }
 
-// Get the context in the composable scope
     val context = LocalContext.current
     val vibrator = context.getSystemService(Vibrator::class.java) as Vibrator
     BackHandler(enabled = true, onBack = {
         Log.d("BowlsScorer", "Swipe-right intercepted")
-        // Trigger vibration
         vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
         coroutineScope.launch { showExitDialog = true }
     })
-//=========================
-fun resetGame() {
-    myScore = 0
-    theirScore = 0
-    strtMyScore = 0
-    strtTheirScore = 0
-    endCount = 1
-    meClick = false
-    themClick = false
-    bowls = 0
-    gameOver = false
-    isScoringCurrentEnd = false
-    endHistory.clear()
-    currentUpScore = 0
-    currentDownScore = 0
-    startTime = null
-    hasSavedFile = false
-    Log.d("BowlsScorer", "resetGame called, startTime reset to $startTime")
-}
-//===========================
-fun saveMatchFile() {
-    Log.d("BowlsScorer", "saveMatchFile called")
-    val endTime = System.currentTimeMillis()
-    val elapsedTime = startTime?.let { endTime - it } ?: 0L
-    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
 
-    val file = File(context.filesDir, "$fileName.txt")
-    try {
-        // Calculate running totals for Game Scores
-        val gameScores = mutableListOf<Pair<Int, Int>>()
-        var runningUpScore = 0
-        var runningDownScore = 0
-        for (end in endHistory) {
-            runningUpScore += end.second // Up score for this end
-            runningDownScore += end.third // Down score for this end
-            gameScores.add(Pair(runningUpScore, runningDownScore))
-        }
-
-        // Build the scores section with both End Scores and Game Scores
-        val scoresBuilder = StringBuilder()
-        scoresBuilder.append("End Scores          Game Scores\n")
-        scoresBuilder.append("==========          ===========\n")
-        endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
-            val gameScore = gameScores[index]
-            // Format: "End 1: 4-0            4-0"
-            scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
-            scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
-        }
-
-        // Write the file
-        val fileContent = "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
-                scoresBuilder.toString() + " \n" +
-                "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
-                "Elapsed Time: ${elapsedTime / 60000} minutes\n"
-        file.writeText(fileContent)
-        Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
-        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
-        fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
-
-        // Send the file to the phone
-        sendMatchFileToPhone(context, "$fileName.txt", fileContent)
-    } catch (e: Exception) {
-        Log.e("BowlsScorer", "Failed to save match: ${e.message}")
+    fun resetGame() {
+        myScore = 0
+        theirScore = 0
+        strtMyScore = 0
+        strtTheirScore = 0
+        endCount = 1
+        meClick = false
+        themClick = false
+        bowls = 0
+        gameOver = false
+        isScoringCurrentEnd = false
+        endHistory.clear()
+        currentUpScore = 0
+        currentDownScore = 0
+        startTime = null
+        hasSavedFile = false
+        Log.d("BowlsScorer", "resetGame called, startTime reset to $startTime")
     }
-}
-//-----------------------------------------
+
+    fun saveMatchFile() {
+        Log.d("BowlsScorer", "saveMatchFile called")
+        val endTime = System.currentTimeMillis()
+        val elapsedTime = startTime?.let { endTime - it } ?: 0L
+        val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
+
+        val file = File(context.filesDir, "$fileName.txt")
+        try {
+            val gameScores = mutableListOf<Pair<Int, Int>>()
+            var runningUpScore = 0
+            var runningDownScore = 0
+            for (end in endHistory) {
+                runningUpScore += end.second
+                runningDownScore += end.third
+                gameScores.add(Pair(runningUpScore, runningDownScore))
+            }
+
+            val scoresBuilder = StringBuilder()
+            scoresBuilder.append("End Scores          Game Scores\n")
+            scoresBuilder.append("==========          ===========\n")
+            endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
+                val gameScore = gameScores[index]
+                scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
+                scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
+            }
+
+            val fileContent = "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
+                    scoresBuilder.toString() + " \n" +
+                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
+                    "Elapsed Time: ${elapsedTime / 60000} minutes\n"
+            file.writeText(fileContent)
+            Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
+            Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
+            fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
+            // Do NOT send the file immediately; wait for phone request
+        } catch (e: Exception) {
+            Log.e("BowlsScorer", "Failed to save match: ${e.message}")
+        }
+    }
+
     if (showExitDialog) {
         Dialog(
             onDismissRequest = { showExitDialog = false },
@@ -360,11 +368,11 @@ fun saveMatchFile() {
     }
 
     if (gameSingles) {
-        maxClick = 4 // 2 bowls per player, 2 players
-        maxScorePerSide = 2 // Max score per side per end
+        maxClick = 4
+        maxScorePerSide = 2
     } else {
-        maxClick = 8 // 2 bowls per player, 4 players
-        maxScorePerSide = 4 // Max score per side per end
+        maxClick = 8
+        maxScorePerSide = 4
     }
 
     LaunchedEffect(myScore, theirScore) {
@@ -374,7 +382,7 @@ fun saveMatchFile() {
             gameOver = true
         }
     }
-//----------------------------------------------------
+
     LaunchedEffect(gameOver) {
         if (gameOver && !hasSavedFile) {
             Log.d("BowlsScorer", "Game over confirmed, saving file")
@@ -383,12 +391,8 @@ fun saveMatchFile() {
             showHistoryDialog = true
         }
     }
-//----------------------------------------------------
 
-
-//--------------------------------------------------
     if (gameOver && !showHistoryDialog && !showGameOverOptions) {
-        // This block is now redundant but kept for clarity; it won’t show unless dialogs are off
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -408,7 +412,7 @@ fun saveMatchFile() {
         Dialog(
             onDismissRequest = {
                 showHistoryDialog = false
-                showGameOverOptions = true // Show options after history is dismissed
+                showGameOverOptions = true
             },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
@@ -430,7 +434,7 @@ fun saveMatchFile() {
             }
         }
     }
-//-----------------------------------------------
+
     if (showGameOverOptions) {
         Dialog(
             onDismissRequest = { showGameOverOptions = false },
@@ -461,7 +465,7 @@ fun saveMatchFile() {
                             onClick = {
                                 resetGame()
                                 onNewGame()
-                                hasSavedFile = false // Reset for next game
+                                hasSavedFile = false
                                 showGameOverOptions = false
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black)
@@ -475,7 +479,6 @@ fun saveMatchFile() {
             }
         }
     }
-//-------------------------------------------------
 
     fun resetCurrentEnd() {
         meClick = false
@@ -580,8 +583,8 @@ fun saveMatchFile() {
 
     Surface(
         modifier = modifier.pointerInput(Unit) { detectTapGestures(onLongPress = { coroutineScope.launch { showExitDialog = true } }) },
-        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black    ) {          // Setting background colour of EDIT Screens
- //---------------------------------------------
+        color = if (editingEnd != null || addingEnd != null) Color(0xFFB0B0B0) else if (isScoringCurrentEnd) Color(0xFF1E90FF) else Color.Black
+    ) {
         if (gameOver) {
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = if (myScore >= 21) "Up Wins!" else "Down Wins!", color = if (myScore >= 21) Color.White else Color.Yellow, fontSize = 20.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
@@ -643,16 +646,14 @@ fun saveMatchFile() {
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
-                        modifier = Modifier.size(width = 60.dp, height = 30.dp),contentPadding = PaddingValues(0.dp) // Remove default padding
+                        modifier = Modifier.size(width = 60.dp, height = 30.dp),contentPadding = PaddingValues(0.dp)
                     ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
-//-------------------------------------------------------------------
                     Button(
                         onClick = { replaceEnd(editingEnd!!) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
                         modifier = Modifier.size(width = 60.dp, height = 30.dp),
                         contentPadding = PaddingValues(0.dp)
                     ) { Text("ADD", fontSize = 14.sp) }
-//------------------------------------------------------------------
                 }
                 Text(
                     "Editing End $editingEnd",
@@ -746,7 +747,6 @@ fun saveMatchFile() {
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-//-------------------------------------------------------
                     Button(
                         onClick = {
                             view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -760,8 +760,6 @@ fun saveMatchFile() {
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasChanges) Color.Green else Color.Red, contentColor = if (hasChanges) Color.Black else Color.White),
                         modifier = Modifier.size(width = 120.dp, height = 40.dp)
                     ) { Text(if (hasChanges) "Save" else "Cancel", fontSize = 14.sp) }
-//--------------------------------------------------------------------------------
-
                 }
             }
         } else {
@@ -864,9 +862,7 @@ fun saveMatchFile() {
                 }
             }
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally) {
-
-//=========================================== CLEAR or 'X'    =====================================
+                horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 0.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -875,40 +871,32 @@ fun saveMatchFile() {
                         onClick = { resetCurrentEnd() },
                         modifier = Modifier
                             .size(40.dp)
-                            .offset(x = 0.dp, y = 20.dp) // Moves the IconButton down by 20.dp
+                            .offset(x = 0.dp, y = 20.dp)
                     ) {
                         Icon(Icons.Filled.Clear, "Clear", modifier = Modifier.size(40.dp), tint = Color.Red)
                     }
-//=========================================== CLEAR or 'X'    =====================================
-
-//=========================================== 'END bits'    adjust here greg    =====================================
                     Row {
                         Button(
                             onClick = { if (!gameOver) { if (!meClick && !themClick) showDeadEndDialog = true else completeEnd() } },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Green, contentColor = Color.Black),
-                                    modifier = Modifier.height(26.dp).width(76.dp).offset(x = -2.dp, y = 26.dp),
-                            contentPadding = PaddingValues(0.dp) // Remove default padding
+                            modifier = Modifier.height(26.dp).width(76.dp).offset(x = -2.dp, y = 26.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                                Text(
-                                    text = "END: $endCount",
-                                    fontSize = 18.sp,
-                                    color = Color.Black,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-//----------------------------------------------------------------------------------------
+                            Text(
+                                text = "END: $endCount",
+                                fontSize = 18.sp,
+                                color = Color.Black,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-//===========================   END Button    ======================================
                     }
-//===========================   END of ROW    ======================================
                 }
-//===================================  Blue 'H' or History Button  ====================================
                 Button(
                     onClick = { showHistoryDialog = true },
                     modifier = Modifier
                         .size(width = 60.dp, height = 50.dp)
                         .offset(x = 0.dp, y = 20.dp),
-//                    shape = RoundedCornerShape(8.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF1E90FF),
@@ -922,89 +910,75 @@ fun saveMatchFile() {
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
-                            .offset(y = (-14).dp) // Shift the "H" to the top of the button
-                            .padding(top = 2.dp) // Small buffer to avoid clipping
+                            .offset(y = (-14).dp)
+                            .padding(top = 2.dp)
                     )
                 }
             }
         }
-//===================================
-        if (showExitDialog)
-        {
+
+        if (showExitDialog) {
             AlertDialog(
-                        onDismissRequest = { showExitDialog = false },
-                        title = { Text("Exit App?") },
-        //----------------------------------
-                        confirmButton = {
-                            Button(onClick = { showExitDialog = false; mContext.finish() },
-                                modifier = Modifier
-                                    .width(120.dp) // Adjust the button width
-                                    .height(50.dp) // Adjust the button height
-                                    .padding(8.dp), // Add padding around the button (optional)
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Red, // Background color of the button
-                                    contentColor = Color.White // Default content color (affects text if not overridden)
-                                )
-                            ) {
-                                Text(
-                                    text = "EXIT!!!",
-                                    fontSize = 18.sp, // Adjust the font size
-                                    color = Color.White, // Text color (overrides contentColor)
-                                )
-                            }
-                        },
-                        dismissButton = {
-                            Button(onClick = { showExitDialog = false },
-                                modifier = Modifier
-                                    .width(220.dp) // Adjust the button width
-                                    .height(70.dp) // Adjust the button height
-                                    .padding(8.dp), // Add padding around the button (optional)
-                                contentPadding = PaddingValues(0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Green, // Background color of the button
-                                    contentColor = Color.White // Default content color (affects text if not overridden)
-                                )
-                            ) {
-                                Text(
-                                    text = "Cancel",
-                                    fontSize = 32.sp, // Adjust the font size
-                                    color = Color.Black, // Text color (overrides contentColor)
-                                )
-                            }
-                            }, containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
+                onDismissRequest = { showExitDialog = false },
+                title = { Text("Exit App?") },
+                confirmButton = {
+                    Button(onClick = { showExitDialog = false; mContext.finish() },
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(50.dp)
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.White
                         )
+                    ) {
+                        Text(
+                            text = "EXIT!!!",
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showExitDialog = false },
+                        modifier = Modifier
+                            .width(220.dp)
+                            .height(70.dp)
+                            .padding(8.dp),
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Green,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            fontSize = 32.sp,
+                            color = Color.Black
+                        )
+                    }
+                },
+                containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
+            )
         }
-//===================================
 
         if (showDeadEndDialog) {
             AlertDialog(
                 onDismissRequest = { showDeadEndDialog = false },
                 title = { Text("Dead END?") },
-//                text = { Text("This is a dead end. Move to next end?") },
                 confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Dead-END") } },
                 dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
-//--------------------------------------------------------
+
         if (showHistoryDialog) {
             Dialog(
                 onDismissRequest = {
                     showHistoryDialog = false
-                    if (gameOver) { // Only save file at game over
-                        val endTime = System.currentTimeMillis()
-                        val elapsedTime = startTime?.let { endTime - it } ?: 0L
-                        val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
-                        val file = File(context.filesDir, "$fileName.txt")
-                        file.writeText(
-                            "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
-                                    "End Scores: ${endHistory.joinToString { "${it.first}: ${it.second}-${it.third}" }}\n" +
-                                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
-                                    "Elapsed Time: ${elapsedTime / 60000} minutes"
-                        )
-                        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_SHORT).show()
+                    if (gameOver) {
+                        showGameOverOptions = true
                     }
-                    showGameOverOptions = true
                 },
                 properties = DialogProperties(usePlatformDefaultWidth = false)
             ) {
@@ -1013,14 +987,14 @@ fun saveMatchFile() {
                     color = Color.Black
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(8.dp), // Reduced padding for more space
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             "End History",
                             color = Color(0xFFD3D3D3),
-                            fontSize = 20.sp, // Slightly smaller for Wear OS
+                            fontSize = 20.sp,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         if (endHistory.isEmpty()) {
@@ -1042,11 +1016,10 @@ fun saveMatchFile() {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 4.dp, vertical = 4.dp) // Added vertical padding
-                                            .heightIn(min = 32.dp), // Ensure minimum height for easier tapping
+                                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                                            .heightIn(min = 32.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
-
                                     ) {
                                         Text("$endNum.  ", color = Color(0xFF1E90FF), fontSize = 26.sp, modifier = Modifier.weight(1f))
                                         Text(upScore.toString(), color = Color(0xFFD3D3D3), fontSize = 26.sp, modifier = Modifier.weight(1f))
@@ -1061,7 +1034,6 @@ fun saveMatchFile() {
                                 }
                             }
                         }
-                        // Show Saved Matches only after game over
                         if (gameOver) {
                             val files = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
                             if (files.isEmpty()) {
@@ -1072,36 +1044,20 @@ fun saveMatchFile() {
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
-//                            else {
-//                                ScalingLazyColumn(
-//                                    modifier = Modifier.fillMaxWidth().heightIn(max = 80.dp).padding(vertical = 4.dp), // Fixed max height
-//                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-//                                ) {
-//                                    items(files.size) { index ->
-//                                        Text(
-//                                            files[index].name,
-//                                            color = Color(0xFFD3D3D3),
-//                                            fontSize = 14.sp,
-//                                            modifier = Modifier.padding(horizontal = 4.dp)
-//                                        )
-//                                    }
-//                                }
-//                            }
                         }
                         Button(
                             onClick = { showHistoryDialog = false },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
                             modifier = Modifier.padding(top = 0.dp)
-                                .size(width = 80.dp, height = 24.dp), // Smaller button
-                                contentPadding = PaddingValues(2.dp) // Reduce padding to fit text
+                                .size(width = 80.dp, height = 24.dp),
+                            contentPadding = PaddingValues(2.dp)
                         ) { Text("Close", fontSize = 14.sp) }
                     }
                 }
             }
         }
-//--------------------------------------
     }
-}                       // End of Scorer Composable
+}
 
 @Preview(showBackground = true, widthDp = 320, heightDp = 320)
 @Composable
