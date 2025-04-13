@@ -43,6 +43,7 @@ import android.os.VibrationEffect
 import java.text.SimpleDateFormat
 import java.io.File
 import com.google.android.gms.wearable.* // Add Wearable API imports
+import android.os.Environment
 
 class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListener {
     private lateinit var notificationManager: NotificationManager
@@ -120,27 +121,30 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
             println("Failed to disable DND: ${e.message}")
         }
     }
-
+//-----------------------------------
     // Handle requests from the phone to send match files
-    override fun onMessageReceived(messageEvent: MessageEvent) {
-        if (messageEvent.path == "/request_match_files") {
-            Log.d("WatchApp", "Received request for match files")
-            val files = filesDir.listFiles { _, name -> name.startsWith("B") && name.endsWith(".txt") }
-            if (files != null && files.isNotEmpty()) {
-                files.forEach { file ->
-                    val fileName = file.name
-                    val fileContent = file.readText()
-                    Log.d("WatchApp", "Sending file: $fileName")
-                    sendMatchFileToPhone(this, fileName, fileContent)
-                    // Optionally delete the file after sending
-                    file.delete()
-                    Log.d("WatchApp", "Deleted file: $fileName")
-                }
-            } else {
-                Log.d("WatchApp", "No match files found to send")
+override fun onMessageReceived(messageEvent: MessageEvent) {
+    if (messageEvent.path == "/request_match_files") {
+        Log.d("WatchApp", "Received request for match files")
+        // Check the MatchFiles directory in app-specific external storage
+        val directory = File(getExternalFilesDir(null), "MatchFiles")
+        val files = directory.listFiles { _, name -> name.startsWith("B") && name.endsWith(".txt") }
+        if (files != null && files.isNotEmpty()) {
+            files.forEach { file ->
+                val fileName = file.name
+                val fileContent = file.readText()
+                Log.d("WatchApp", "Sending file: $fileName")
+                sendMatchFileToPhone(this, fileName, fileContent)
+                // Optionally delete the file after sending
+                file.delete()
+                Log.d("WatchApp", "Deleted file: $fileName")
             }
+        } else {
+            Log.d("WatchApp", "No match files found to send")
         }
     }
+}
+//-------------------------------------------------------
 }
 
 @Composable
@@ -238,7 +242,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     var isScoringCurrentEnd by rememberSaveable { mutableStateOf(false) }
     var startTime by rememberSaveable { mutableStateOf<Long?>(null) }
     var hasSavedFile by rememberSaveable { mutableStateOf(false) }
-    var fileList by remember { mutableStateOf(emptyList<File>()) }
+    var fileList by remember { mutableStateOf(mutableListOf<File>()) }
 
     var tempMyScore by remember { mutableStateOf(0) }
     var tempTheirScore by remember { mutableStateOf(0) }
@@ -282,47 +286,60 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
         hasSavedFile = false
         Log.d("BowlsScorer", "resetGame called, startTime reset to $startTime")
     }
+//----------------------------------
+fun saveMatchFile(
+    context: Context,
+    startTime: Long?,
+    endTime: Long,
+    elapsedTime: Long,
+    endHistory: List<Triple<Int, Int, Int>>,
+    fileList: MutableList<File>
+) {
+    Log.d("BowlsScorer", "saveMatchFile called")
+    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}.txt"
 
-    fun saveMatchFile() {
-        Log.d("BowlsScorer", "saveMatchFile called")
-        val endTime = System.currentTimeMillis()
-        val elapsedTime = startTime?.let { endTime - it } ?: 0L
-        val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}"
-
-        val file = File(context.filesDir, "$fileName.txt")
-        try {
-            val gameScores = mutableListOf<Pair<Int, Int>>()
-            var runningUpScore = 0
-            var runningDownScore = 0
-            for (end in endHistory) {
-                runningUpScore += end.second
-                runningDownScore += end.third
-                gameScores.add(Pair(runningUpScore, runningDownScore))
-            }
-
-            val scoresBuilder = StringBuilder()
-            scoresBuilder.append("End Scores          Game Scores\n")
-            scoresBuilder.append("==========          ===========\n")
-            endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
-                val gameScore = gameScores[index]
-                scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
-                scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
-            }
-
-            val fileContent = "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
-                    scoresBuilder.toString() + " \n" +
-                    "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
-                    "Elapsed Time: ${elapsedTime / 60000} minutes\n"
-            file.writeText(fileContent)
-            Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
-            Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
-            fileList = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
-            // Do NOT send the file immediately; wait for phone request
-        } catch (e: Exception) {
-            Log.e("BowlsScorer", "Failed to save match: ${e.message}")
-        }
+    // Use app-specific external storage directory
+    val directory = File(context.getExternalFilesDir(null), "MatchFiles")
+    if (!directory.exists()) {
+        val created = directory.mkdirs()
+        Log.d("BowlsScorer", "Directory created: $created for ${directory.absolutePath}")
     }
+    val file = File(directory, fileName)
 
+    try {
+        val gameScores = mutableListOf<Pair<Int, Int>>()
+        var runningUpScore = 0
+        var runningDownScore = 0
+        for (end in endHistory) {
+            runningUpScore += end.second
+            runningDownScore += end.third
+            gameScores.add(Pair(runningUpScore, runningDownScore))
+        }
+
+        val scoresBuilder = StringBuilder()
+        scoresBuilder.append("End Scores          Game Scores\n")
+        scoresBuilder.append("==========          ===========\n")
+        endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
+            val gameScore = gameScores[index]
+            scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
+            scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
+        }
+
+        val fileContent = "Start Time: ${startTime?.let { SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(it) } ?: "Not recorded"}\n" +
+                scoresBuilder.toString() + "\n" +
+                "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
+                "Elapsed Time: ${elapsedTime / 60000} minutes\n"
+        file.writeText(fileContent)
+        Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
+        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
+        fileList.clear()
+        fileList.addAll(directory.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList())
+    } catch (e: Exception) {
+        Log.e("BowlsScorer", "Failed to save match: ${e.message}")
+        Toast.makeText(context, "Failed to save match: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+}
+//--------------------------------------------------
     if (showExitDialog) {
         Dialog(
             onDismissRequest = { showExitDialog = false },
@@ -386,7 +403,16 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
     LaunchedEffect(gameOver) {
         if (gameOver && !hasSavedFile) {
             Log.d("BowlsScorer", "Game over confirmed, saving file")
-            saveMatchFile()
+            val endTime = System.currentTimeMillis()
+            val elapsedTime = startTime?.let { endTime - it } ?: 0L
+            saveMatchFile(
+                context = mContext,
+                startTime = startTime,
+                endTime = endTime,
+                elapsedTime = elapsedTime,
+                endHistory = endHistory,
+                fileList = fileList
+            )
             hasSavedFile = true
             showHistoryDialog = true
         }
@@ -1034,8 +1060,10 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                 }
                             }
                         }
+//----------------------------------------------------
                         if (gameOver) {
-                            val files = context.filesDir.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
+                            val directory = File(context.getExternalFilesDir(null), "MatchFiles")
+                            val files = directory.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
                             if (files.isEmpty()) {
                                 Text(
                                     "No saved matches",
@@ -1045,6 +1073,7 @@ fun Scorer(gameSingles: Boolean, onNewGame: () -> Unit, modifier: Modifier = Mod
                                 )
                             }
                         }
+//-----------------------------------------
                         Button(
                             onClick = { showHistoryDialog = false },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
