@@ -44,6 +44,9 @@ import java.text.SimpleDateFormat
 import java.io.File
 import com.google.android.gms.wearable.* // Add Wearable API imports
 import android.os.Environment
+import android.media.MediaScannerConnection
+import java.io.FileOutputStream
+import java.nio.charset.Charset
 
 class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListener {
     private lateinit var notificationManager: NotificationManager
@@ -122,13 +125,16 @@ class MainActivity : ComponentActivity(), MessageClient.OnMessageReceivedListene
         }
     }
 //-----------------------------------
-    // Handle requests from the phone to send match files
 override fun onMessageReceived(messageEvent: MessageEvent) {
     if (messageEvent.path == "/request_match_files") {
         Log.d("WatchApp", "Received request for match files")
-        // Check the MatchFiles directory in app-specific external storage
-        val directory = File(getExternalFilesDir(null), "MatchFiles")
-        val files = directory.listFiles { _, name -> name.startsWith("B") && name.endsWith(".txt") }
+//--------
+// From this
+        val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+// To this
+//      val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+//-----------
+        val files = directory.listFiles { _: File, name: String -> name.startsWith("B") && name.endsWith(".txt") }
         if (files != null && files.isNotEmpty()) {
             files.forEach { file ->
                 val fileName = file.name
@@ -296,15 +302,21 @@ fun saveMatchFile(
     fileList: MutableList<File>
 ) {
     Log.d("BowlsScorer", "saveMatchFile called")
-    val fileName = "B${SimpleDateFormat("HHmm-dd-MM-yyyy", Locale.US).format(endTime)}.txt"
+    val fileName = "B${SimpleDateFormat("HHmmss-dd-MM-yyyy", Locale.US).format(endTime)}.txt"
+    Log.d("BowlsScorer", "Generated filename: $fileName")
 
-    // Use app-specific external storage directory
-    val directory = File(context.getExternalFilesDir(null), "MatchFiles")
+    // Use public Downloads folder
+    val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+//    val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+    Log.d("BowlsScorer", "Target directory: ${directory.absolutePath}")
+
     if (!directory.exists()) {
         val created = directory.mkdirs()
-        Log.d("BowlsScorer", "Directory created: $created for ${directory.absolutePath}")
+        Log.d("BowlsScorer", "Directory created: $created")
     }
+
     val file = File(directory, fileName)
+    Log.d("BowlsScorer", "Target file path: ${file.absolutePath}")
 
     try {
         val gameScores = mutableListOf<Pair<Int, Int>>()
@@ -319,7 +331,10 @@ fun saveMatchFile(
         val scoresBuilder = StringBuilder()
         scoresBuilder.append("End Scores          Game Scores\n")
         scoresBuilder.append("==========          ===========\n")
-        endHistory.forEachIndexed { index, (endNum, upScore, downScore) ->
+        endHistory.forEachIndexed { index, triple ->
+            val endNum = triple.first
+            val upScore = triple.second
+            val downScore = triple.third
             val gameScore = gameScores[index]
             scoresBuilder.append("End $endNum: $upScore-$downScore".padEnd(20))
             scoresBuilder.append("${gameScore.first}-${gameScore.second}\n")
@@ -329,11 +344,29 @@ fun saveMatchFile(
                 scoresBuilder.toString() + "\n" +
                 "End Time: ${SimpleDateFormat("HH:mm:ss dd-MM-yyyy", Locale.US).format(endTime)}\n" +
                 "Elapsed Time: ${elapsedTime / 60000} minutes\n"
-        file.writeText(fileContent)
+
+        // Write file using OutputStream with Charset.forName("UTF-8")
+        FileOutputStream(file).use { output ->
+            output.write(fileContent.toByteArray(Charset.forName("UTF-8")))
+            output.flush()
+        }
+
+        // Trigger media scan with additional metadata
+        MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("text/plain")) { path, uri ->
+            Log.d("BowlsScorer", "Media scan completed for $path, URI: $uri")
+            // Notify File Manager of new file
+            context.contentResolver.notifyChange(uri, null)
+        }
+
         Log.d("BowlsScorer", "Saved match to ${file.absolutePath}")
-        Toast.makeText(context, "Match saved as $fileName", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, "Match saved as $fileName in Downloads", Toast.LENGTH_LONG).show()
+
+        // Refresh fileList with explicit types for lambda parameters
         fileList.clear()
-        fileList.addAll(directory.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList())
+        val files = directory.listFiles { _: File, name: String -> name.startsWith("B") && name.endsWith(".txt") }
+        if (files != null) {
+            fileList.addAll(files)
+        }
     } catch (e: Exception) {
         Log.e("BowlsScorer", "Failed to save match: ${e.message}")
         Toast.makeText(context, "Failed to save match: ${e.message}", Toast.LENGTH_LONG).show()
@@ -801,7 +834,8 @@ fun saveMatchFile(
                     Surface(
                         modifier = Modifier
                             .padding(start = 8.dp, end = 4.dp)
-                            .offset(x = 2.dp, y = 0.dp)
+// greg modify from x = 2.dp
+                            .offset(x = 10.dp, y = 0.dp)
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onTap = {
@@ -833,7 +867,9 @@ fun saveMatchFile(
                             Text(
                                 if (isScoringCurrentEnd) "$currentUpScore"
                                 else "$myScore",
+//This is the Main Game Scoring Screen 'Up digit' - tap to increment
                                 color = Color.White,
+//                                color = Color.Red,
                                 fontSize = 60.sp
                             )
                         }
@@ -880,7 +916,9 @@ fun saveMatchFile(
                                 if (isScoringCurrentEnd)
                                     "$currentDownScore"
                                 else "$theirScore",
+//This is the Main Game Scoring Screen 'Down digit' - tap to increment
                                 color = Color.Yellow,
+//                                color = Color.Red,
                                 fontSize = 60.sp
                             )
                         }
@@ -992,8 +1030,8 @@ fun saveMatchFile(
             AlertDialog(
                 onDismissRequest = { showDeadEndDialog = false },
                 title = { Text("Dead END?") },
-                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.Black)) { Text("Dead-END") } },
-                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.Black)) { Text("Cancel") } },
+                confirmButton = { Button(onClick = { showDeadEndDialog = false; completeEnd(); mToast(mContext) }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)) { Text("Dead-END") } },
+                dismissButton = { Button(onClick = { showDeadEndDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White)) { Text("Cancel") } },
                 containerColor = Color.Black, titleContentColor = Color.White, textContentColor = Color.White
             )
         }
@@ -1061,18 +1099,22 @@ fun saveMatchFile(
                             }
                         }
 //----------------------------------------------------
-                        if (gameOver) {
-                            val directory = File(context.getExternalFilesDir(null), "MatchFiles")
-                            val files = directory.listFiles()?.filter { it.name.startsWith("B") } ?: emptyList()
-                            if (files.isEmpty()) {
-                                Text(
-                                    "No saved matches",
-                                    color = Color(0xFFD3D3D3),
-                                    fontSize = 16.sp,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                        }
+@Composable
+fun GameOverScreen(gameOver: Boolean) {
+    if (gameOver) {
+        val context = LocalContext.current
+        val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val files = directory.listFiles { _: File, name: String -> name.startsWith("B") && name.endsWith(".txt") }?.toList() ?: emptyList()
+        if (files.isEmpty()) {
+            Text(
+                "No saved matches",
+                color = Color(0xFFD3D3D3),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
 //-----------------------------------------
                         Button(
                             onClick = { showHistoryDialog = false },
